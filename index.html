@@ -643,7 +643,7 @@ async function navigate() {
 /* ---------------- nav & routing ---------------- */
 const ROUTES = [
   { id:'dashboard', label:'Dashboard',          render: renderHome },
-  { id:'clock',     label:'Check In/Out',       render: renderClock },
+  { id:'clock',     label:'Check In/Out',       render: renderClock, cou:true },
   { id:'board',     label:'Leaderboard',        render: renderLeaderboard },
   { id:'students',  label:'Students',           render: renderStudents },
   { id:'menu',      label:'Menu',               render: renderMenu },
@@ -656,7 +656,7 @@ const ROUTES = [
   { id:'enrollments',label:'Enroll Requests',   render: renderEnrollments, sup:true },
 ];
 function buildNav() {
-  $('#main-nav').innerHTML = ROUTES.filter(r => !r.sup || me.role === 'supervisor')
+  $('#main-nav').innerHTML = ROUTES.filter(r => (!r.sup || me.role === 'supervisor') && (!r.cou || me.role === 'counselor'))
     .map(r => `<a href="#${r.id}" data-id="${r.id}" class="${r.sup ? 'sup' : ''}">${r.label}</a>`).join('')
     + `<a href="#site">Website</a>`;
   $$('#main-nav a').forEach(a => a.addEventListener('click', () => toggleNav(false)));
@@ -671,7 +671,7 @@ window.addEventListener('hashchange', navigate);
 async function route(soft = false) {
   let id = (location.hash || '#dashboard').slice(1).split('?')[0];
   let r = ROUTES.find(x => x.id === id);
-  if (!r || (r.sup && me.role !== 'supervisor')) { r = ROUTES[0]; id = 'dashboard'; }
+  if (!r || (r.sup && me.role !== 'supervisor') || (r.cou && me.role !== 'counselor')) { r = ROUTES[0]; id = 'dashboard'; }
   const changed = id !== currentRoute;
   currentRoute = id;
   clearInterval(clockTimer);
@@ -754,7 +754,7 @@ async function renderHome(page) {
   const [logs, pending, mySess] = await Promise.all([
     q(sb.from('point_logs').select('*').order('created_at', { ascending:false }).limit(6)),
     me.role === 'supervisor' ? q(sb.from('orders').select('id', { count:'exact', head:false }).eq('status','pending')) : Promise.resolve(null),
-    q(sb.rpc('my_sessions')),
+    me.role === 'counselor' ? q(sb.rpc('my_sessions')) : Promise.resolve([]),
   ]);
   const openSess = mySess.find(s => s.status === 'open');
   const hour = new Date().getHours();
@@ -770,10 +770,10 @@ async function renderHome(page) {
           </div>
           <div class="wallet-balance">${fmtPts(me.points)}<small>points</small></div>
         </div>
-        <a href="#clock" class="clock-strip ${openSess ? 'is-in' : ''}">
+        ${me.role === 'counselor' ? `<a href="#clock" class="clock-strip ${openSess ? 'is-in' : ''}">
           <span><b>${openSess ? 'You\'re checked in' : 'Volunteering today?'}</b>${openSess ? `Since ${fmtClock(openSess.check_in_at)} at ${esc(openSess.location)}` : 'Check in when you start'}</span>
           <span class="btn btn-sm ${openSess ? 'btn-red' : 'btn-primary'}">${openSess ? 'Check out' : 'Check in'}</span>
-        </a>
+        </a>` : ''}
         <div class="quick">
           <a href="#menu" class="q-red"><b>Order from the menu</b><span>For yourself or a student</span></a>
           <a href="#students" class="q-green"><b>Give student points</b><span>Add or deduct points</span></a>
