@@ -1,0 +1,1678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BookNook4Kids Cafe</title>
+<meta name="theme-color" content="#FFFEEC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --paper:#FFFEEC; --card:#FFFFFF; --ink:#1E2440; --ink-2:#4A5070; --line:#E6E3C8;
+  --red:#E8202A; --red-ink:#B3121A; --red-tint:#FFE4E2;
+  --blue:#0088CB; --blue-ink:#006699; --blue-tint:#D0E9FD;
+  --sun:#FFCB05; --sun-tint:#FFF3B8;
+  --grape:#8E2BB0; --grape-tint:#F3CDFE;
+  --green:#2E8B57; --green-tint:#DDF3E4;
+  --serif:'Bitter', Georgia, serif; --sans:'Poppins', system-ui, -apple-system, Segoe UI, sans-serif;
+  --r-sm:8px; --r:14px; --r-lg:22px;
+  --shadow:0 2px 0 var(--line);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif);line-height:1.15;margin:0;font-weight:800}
+h1{font-size:clamp(1.7rem,4vw,2.3rem)}
+h2{font-size:1.35rem}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+a{color:var(--blue-ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+
+/* book-spine strip: the brand mark used across the app */
+.spines{display:flex;height:8px}
+.spines i{flex:1}
+.spines i:nth-child(1){background:var(--red)}
+.spines i:nth-child(2){background:var(--sun);flex:.6}
+.spines i:nth-child(3){background:var(--blue);flex:1.3}
+.spines i:nth-child(4){background:var(--grape);flex:.7}
+.spines i:nth-child(5){background:var(--green);flex:.5}
+
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.logo-mark{width:38px;height:38px;flex:none}
+.logo-text{font-family:var(--serif);font-weight:800;font-size:1.15rem;line-height:1.05}
+.logo-text small{display:block;font-family:var(--sans);font-weight:500;font-size:.72rem;color:var(--ink-2);letter-spacing:.01em}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem;cursor:pointer;text-decoration:none;white-space:nowrap;line-height:1.2;min-height:40px}
+.btn:hover{background:var(--sun-tint)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-ink);border-color:var(--blue-ink)}
+.btn-red{background:var(--red);border-color:var(--red);color:#fff}
+.btn-red:hover{background:var(--red-ink);border-color:var(--red-ink)}
+.btn-add{border-color:var(--green);color:var(--green);background:#fff}
+.btn-add:hover{background:var(--green-tint)}
+.btn-deduct{border-color:var(--red);color:var(--red-ink);background:#fff}
+.btn-deduct:hover{background:var(--red-tint)}
+.btn-ghost{border-color:transparent;background:transparent;padding:8px 10px}
+.btn-ghost:hover{background:rgba(30,36,64,.06)}
+.btn-sm{padding:5px 12px;min-height:34px;font-size:.85rem}
+.btn-big{padding:14px 26px;font-size:1.05rem;min-height:54px}
+
+/* forms */
+label.field{display:block;margin-bottom:14px}
+label.field span{display:block;font-weight:600;font-size:.88rem;margin-bottom:5px}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=url],select,textarea{width:100%;border:2px solid var(--line);background:#fff;border-radius:var(--r-sm);padding:10px 12px;min-height:44px}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:none}
+textarea{min-height:90px;resize:vertical}
+.form-error{background:var(--red-tint);color:var(--red-ink);border-radius:var(--r-sm);padding:10px 12px;font-weight:600;margin-bottom:14px}
+.hint{color:var(--ink-2);font-size:.85rem}
+
+/* ===== Login ===== */
+#login-view{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.login-art{background:var(--blue);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-art .logo{color:#fff}
+.login-art .logo-text small{color:#D0E9FD}
+.login-art h1{font-size:clamp(2rem,4.4vw,3.2rem);max-width:12ch;margin-top:32px}
+.login-art p{max-width:38ch;margin-top:14px;color:#E8F4FD;font-size:1.02rem}
+.shelf{display:flex;align-items:flex-end;gap:6px;height:150px;margin-top:40px}
+.shelf b{display:block;width:34px;border-radius:5px 5px 2px 2px;border:3px solid rgba(0,0,0,.12)}
+.shelf-board{height:10px;background:var(--sun);border-radius:4px;margin-top:-2px}
+.login-panel{display:flex;align-items:center;justify-content:center;padding:32px 20px}
+.login-box{width:100%;max-width:400px}
+.login-box h2{font-size:1.6rem;margin-bottom:6px}
+.role-switch{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:4px;margin:22px 0 22px}
+.role-switch button{border:0;background:transparent;border-radius:999px;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px}
+.role-switch button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+
+/* ===== App shell ===== */
+header.top{background:var(--paper);position:sticky;top:0;z-index:20;border-bottom:2px solid var(--line)}
+.top-inner{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px}
+.nav-row{max-width:1180px;margin:0 auto;padding:0 14px 10px}
+nav.main{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.main a{text-decoration:none;color:var(--ink);font-weight:500;font-size:.88rem;padding:8px 9px;border-radius:999px;white-space:nowrap}
+nav.main a:hover{background:rgba(30,36,64,.06)}
+nav.main a[aria-current=page]{background:var(--ink);color:var(--paper)}
+nav.main a.sup{color:var(--grape)}
+nav.main a.sup[aria-current=page]{background:var(--grape);color:#fff}
+.who{display:flex;align-items:center;gap:10px;margin-left:auto}
+.who-name{text-align:right;line-height:1.2;font-size:.85rem}
+.who-name b{display:block;font-weight:600}
+.role-pill{display:inline-block;font-size:.72rem;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--blue-tint);color:var(--blue-ink)}
+.role-pill.supervisor{background:var(--grape-tint);color:var(--grape)}
+.menu-toggle{display:none}
+
+main#page{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+#pub-page{display:block}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head p{color:var(--ink-2);margin-top:6px;max-width:60ch}
+
+.panel{background:var(--card);border:2px solid var(--line);border-radius:var(--r-lg);padding:22px}
+.panel + .panel{margin-top:18px}
+
+/* library card: the wallet balance */
+.wallet{position:relative;background:var(--sun);border-radius:var(--r-lg);padding:24px 26px 22px;overflow:hidden;border:3px solid var(--ink)}
+.wallet::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 31px,rgba(30,36,64,.13) 31px 33px);pointer-events:none}
+.wallet > *{position:relative}
+.wallet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.wallet-title{font-family:var(--serif);font-weight:700;font-size:1.05rem}
+.wallet-holder{font-size:.9rem;margin-top:2px}
+.wallet-stamp{border:3px solid var(--red);color:var(--red);font-family:var(--serif);font-weight:800;padding:2px 10px;border-radius:8px;transform:rotate(-6deg);font-size:.9rem;background:rgba(255,255,255,.55)}
+.wallet-balance{font-family:var(--serif);font-weight:800;font-size:clamp(3.4rem,10vw,5.2rem);line-height:1;margin-top:18px;letter-spacing:-.02em}
+.wallet-balance small{font-family:var(--sans);font-size:1rem;font-weight:600;letter-spacing:0;margin-left:6px}
+
+.home-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.quick a{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:var(--r);padding:14px 16px;min-height:86px}
+.quick a:hover{border-color:var(--ink)}
+.quick a b{font-family:var(--serif);font-size:1.02rem}
+.quick a span{font-size:.84rem;color:var(--ink-2)}
+.quick a.q-red{border-left:8px solid var(--red)}
+.quick a.q-blue{border-left:8px solid var(--blue)}
+.quick a.q-grape{border-left:8px solid var(--grape)}
+.quick a.q-green{border-left:8px solid var(--green)}
+.quick a.q-sun{border-left:8px solid var(--sun)}
+
+/* leaderboard */
+.board{margin-top:22px}
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.board-list{list-style:none;margin:0;padding:0}
+.board-row{display:grid;grid-template-columns:44px minmax(0,1.1fr) minmax(0,1.6fr) 96px;align-items:center;gap:14px;padding:10px 4px;border-bottom:2px dashed var(--line)}
+.board-row:last-child{border-bottom:0}
+.board-rank{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:800;background:var(--paper);border:2px solid var(--line)}
+.board-row.r1 .board-rank{background:var(--sun);border-color:#C79600}
+.board-row.r2 .board-rank{background:#E3E6EE;border-color:#A9AFC2}
+.board-row.r3 .board-rank{background:#F2C9A0;border-color:#C58A55}
+.board-name{font-weight:600;overflow-wrap:anywhere}
+.board-row.r1 .board-name{font-family:var(--serif);font-weight:800;font-size:1.1rem}
+.board-bar{height:12px;background:var(--paper);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.board-bar i{display:block;height:100%;background:var(--blue);border-radius:999px}
+.board-row.r1 .board-bar i{background:var(--red)}
+.board-pts{font-family:var(--serif);font-weight:800;font-size:1.15rem;text-align:right;white-space:nowrap}
+.board-pts small{font-family:var(--sans);font-weight:500;font-size:.75rem;color:var(--ink-2);margin-left:3px}
+@media (max-width:640px){
+  .board-row{grid-template-columns:38px minmax(0,1fr) auto;row-gap:6px}
+  .board-bar{grid-column:2 / -1;grid-row:2}
+}
+
+/* leaderboard + menu side by side */
+.board-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start}
+.board-layout .board{margin-top:0}
+.panel.mini-menu h2{margin-bottom:4px;font-size:1.35rem}
+.mini-menu .hint{margin-bottom:12px}
+.mini-list{list-style:none;margin:0;padding:0}
+.mini-item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:2px dashed var(--line)}
+.mini-item:last-child{border-bottom:0}
+.mini-item .menu-thumb{width:56px;height:56px;border-radius:12px;font-size:1.4rem}
+.mini-item b{display:block;font-family:var(--serif);font-weight:700}
+.mini-item span.d{display:block;font-size:.84rem;color:var(--ink-2)}
+@media (max-width:860px){ .board-layout{grid-template-columns:1fr} }
+
+/* lists & tables */
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border:2px solid var(--line);background:#fff;border-radius:999px;padding:7px 16px;font-weight:600;cursor:pointer;min-height:40px}
+.tabs button[aria-selected=true]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input[type=text],.toolbar select{max-width:280px}
+
+.people{list-style:none;margin:0;padding:0}
+.person{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:14px;padding:12px 4px;border-bottom:2px dashed var(--line)}
+.person:last-child{border-bottom:0}
+.avatar{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:1.1rem;color:#fff}
+.person-name{font-weight:600;overflow-wrap:anywhere}
+.person-sub{font-size:.82rem;color:var(--ink-2)}
+.pts{font-family:var(--serif);font-weight:800;font-size:1.35rem;text-align:right;min-width:80px}
+.pts small{font-family:var(--sans);font-weight:500;font-size:.75rem;color:var(--ink-2);margin-left:3px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+table.data{width:100%;border-collapse:collapse;font-size:.92rem}
+table.data th{text-align:left;font-weight:600;font-size:.82rem;color:var(--ink-2);padding:8px 10px;border-bottom:2px solid var(--line)}
+table.data td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.data tr:last-child td{border-bottom:0}
+.amt{font-family:var(--serif);font-weight:800;white-space:nowrap}
+.amt.plus{color:var(--green)}
+.amt.minus{color:var(--red-ink)}
+tr.is-deduct td{background:var(--red-tint)}
+tr.is-deduct td:first-child{box-shadow:inset 5px 0 0 var(--red)}
+.tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.76rem;font-weight:600;background:var(--blue-tint);color:var(--blue-ink);white-space:nowrap}
+.tag.red{background:var(--red);color:#fff}
+.tag.green{background:var(--green-tint);color:var(--green)}
+.tag.sun{background:var(--sun-tint);color:#7A5B00}
+.tag.grape{background:var(--grape-tint);color:var(--grape)}
+.empty{text-align:center;padding:36px 16px;color:var(--ink-2)}
+.empty b{display:block;font-family:var(--serif);color:var(--ink);font-size:1.1rem;margin-bottom:4px}
+
+/* menu */
+.menu-thumb{width:84px;height:84px;border-radius:var(--r);object-fit:cover;display:block;border:2px solid var(--line)}
+.menu-thumb.ph{display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:2rem;color:#fff;border:0}
+.menu-name{font-family:var(--serif);font-weight:700;font-size:1.05rem}
+.menu-desc{color:var(--ink-2);max-width:46ch}
+.cost{display:inline-flex;align-items:baseline;gap:3px;background:var(--sun);border-radius:999px;padding:3px 12px;font-family:var(--serif);font-weight:800;white-space:nowrap}
+.cost small{font-family:var(--sans);font-weight:600;font-size:.72rem}
+
+/* book talk */
+.bt-hero{background:var(--grape);color:#fff;border-radius:var(--r-lg);padding:clamp(24px,5vw,48px);display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:30px;align-items:center;overflow:hidden}
+.bt-hero h1{font-size:clamp(1.9rem,4.6vw,3rem)}
+.bt-hero p{color:#F7E6FF;margin-top:12px;font-size:1.02rem;max-width:46ch}
+.bt-hero .btn-big{background:var(--sun);border-color:var(--sun);color:var(--ink);margin-top:24px}
+.bt-hero .btn-big:hover{background:#fff;border-color:#fff}
+.globe{width:100%;max-width:300px;justify-self:center}
+.bt-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+.bt-cols .panel h3{margin-bottom:8px;font-size:1.15rem}
+.bt-cols .panel{border-top:8px solid var(--blue)}
+.bt-cols .panel:nth-child(2){border-top-color:var(--red)}
+.bt-cols .panel:nth-child(3){border-top-color:var(--sun)}
+
+/* modal */
+.modal-back{position:fixed;inset:0;background:rgba(30,36,64,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal{background:var(--paper);border:3px solid var(--ink);border-radius:var(--r-lg);width:100%;max-width:460px;max-height:calc(100vh - 32px);overflow:auto;padding:24px}
+.modal h2{margin-bottom:14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.confirm-line{font-size:1.05rem;background:#fff;border:2px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.confirm-line.no{background:var(--red-tint);border-color:var(--red);color:var(--red-ink);font-weight:600}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:12px 20px;border-radius:999px;font-weight:600;z-index:200;max-width:calc(100% - 32px);text-align:center}
+.toast.err{background:var(--red)}
+.loading{padding:40px;text-align:center;color:var(--ink-2)}
+
+/* ===== Public website ===== */
+.pub-header{background:var(--paper);position:sticky;top:0;z-index:30;border-bottom:2px solid var(--line)}
+.pub-inner{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.pub-nav{display:flex;align-items:center;gap:4px;margin-left:auto}
+.pub-nav a{text-decoration:none;color:var(--ink);font-weight:500;padding:8px 12px;border-radius:999px}
+.pub-nav a:hover{background:rgba(30,36,64,.06)}
+.pub-nav a[aria-current=page]{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--red)}
+.pub-cta{margin-left:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.sec{padding:clamp(48px,8vw,96px) 0}
+.sec-tint{background:#fff;border-top:2px solid var(--line);border-bottom:2px solid var(--line)}
+.sec h2{font-size:clamp(1.7rem,3.6vw,2.5rem);margin-bottom:18px}
+.lede{font-size:1.08rem;max-width:68ch}
+.prose p{max-width:68ch;margin-bottom:14px;font-size:1.02rem}
+.prose p:last-child{margin-bottom:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,5vw,56px);align-items:center}
+.photo{width:100%;display:block;border-radius:var(--r-lg);border:3px solid var(--ink);background:var(--line);object-fit:cover}
+
+.hero{position:relative;color:#fff;overflow:hidden;background:var(--blue)}
+.vid-band video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:end;padding-top:clamp(48px,8vw,96px);padding-bottom:0}
+.hero-copy{padding-bottom:clamp(44px,7vw,84px)}
+.hero-shelf{display:flex;align-items:flex-end;gap:8px;height:clamp(160px,26vw,300px);border-bottom:12px solid var(--sun)}
+.hero-shelf b{display:block;flex:1;max-width:46px;border-radius:6px 6px 2px 2px;border:3px solid rgba(0,0,0,.14)}
+.hero-shelf b.lean{transform:rotate(-8deg);transform-origin:bottom left;margin-left:10px}
+.watch video{width:100%;display:block;border-radius:var(--r-lg);border:3px solid var(--ink);background:var(--ink);aspect-ratio:16/9}
+.hero h1{font-size:clamp(2.4rem,7vw,5rem);max-width:14ch;line-height:1.02;letter-spacing:-.01em}
+.hero .btn-big{margin-top:24px;background:var(--sun);border-color:var(--sun);color:var(--ink)}
+.hero .btn-big:hover{background:#fff;border-color:#fff}
+.hero .spines{position:absolute;left:0;right:0;bottom:0;height:10px;z-index:1}
+
+.letter{background:#fff;border:2px solid var(--line);border-radius:var(--r-lg);padding:clamp(22px,4vw,40px)}
+.letter p{margin-bottom:14px;max-width:66ch}
+.letter .sign{font-family:var(--serif);font-weight:700;margin-top:18px}
+.founder-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:clamp(22px,4vw,44px);align-items:start}
+.founder-quote{font-family:var(--serif);font-weight:700;font-size:1.25rem;line-height:1.35;margin-top:18px;padding-left:16px;border-left:6px solid var(--sun)}
+.media-row{display:grid;grid-template-columns:1.5fr 1fr .7fr;gap:16px;margin-top:28px;align-items:stretch}
+.media-row video,.media-row img{width:100%;height:100%;object-fit:cover;border-radius:var(--r);border:3px solid var(--ink);background:var(--ink);display:block}
+.media-row img.contain{object-fit:contain;background:#fff}
+
+.books{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.book{background:var(--card);border:2px solid var(--line);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column}
+.book-imgs{display:flex;gap:6px;background:var(--paper);padding:14px;height:260px}
+.book-imgs img{flex:1;min-width:0;height:100%;object-fit:contain;border-radius:8px}
+.book-body{padding:20px 22px 24px;border-top:6px solid var(--blue)}
+.book:nth-child(2) .book-body{border-top-color:var(--red)}
+.book:nth-child(3) .book-body{border-top-color:var(--sun)}
+.book:nth-child(4) .book-body{border-top-color:var(--grape)}
+.book h3{font-size:1.3rem;margin-bottom:4px}
+.book .by{color:var(--ink-2);font-size:.9rem;margin-bottom:10px}
+.book p + p{margin-top:10px}
+
+.quotes{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}
+.quote{background:#fff;border:2px solid var(--line);border-radius:var(--r-lg);padding:22px 24px}
+.quote + .quote{margin-top:18px}
+.quote blockquote{margin:0;font-size:1.02rem}
+.quote cite{display:block;font-style:normal;font-weight:600;margin-top:12px;color:var(--ink-2)}
+.quote.big{background:var(--sun-tint);border-color:var(--sun)}
+.quote.big blockquote{font-family:var(--serif);font-size:1.15rem;line-height:1.5}
+
+.vid-band{position:relative;overflow:hidden;color:#fff;background:var(--ink)}
+.vid-band::after{content:"";position:absolute;inset:0;background:rgba(30,36,64,.7)}
+.vid-band .wrap{position:relative;z-index:1}
+.enroll-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,5vw,56px);align-items:center}
+.enroll-grid h2{color:#fff}
+.enroll-grid .lede{color:#E8F4FD}
+.enroll-card{background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:var(--r-lg);padding:clamp(20px,3vw,30px)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.req{color:var(--red)}
+label.field span.req{display:inline;margin:0}
+.thanks{background:var(--green-tint);color:var(--green);border-radius:var(--r);padding:18px;font-weight:600;text-align:center}
+
+.values{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;counter-reset:v}
+.values li{background:#fff;border:2px solid var(--line);border-radius:var(--r-lg);padding:20px}
+.values .num{font-family:var(--serif);font-weight:800;font-size:2rem;line-height:1;color:var(--red)}
+.values li:nth-child(2) .num{color:var(--blue)}
+.values li:nth-child(3) .num{color:#C79600}
+.values li:nth-child(4) .num{color:var(--grape)}
+.values li:nth-child(5) .num{color:var(--green)}
+.values h3{margin:10px 0 6px;font-size:1.15rem}
+.mission-list{margin:14px 0;padding-left:22px;max-width:66ch}
+.mission-list li{margin-bottom:8px}
+.mission-list li::marker{color:var(--red)}
+
+.team{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.member{text-align:left}
+.member img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r-lg);border:3px solid var(--ink);display:block;background:var(--line)}
+.member h3{margin-top:12px;font-size:1.15rem}
+.member p{color:var(--ink-2);font-size:.92rem}
+
+.pub-footer{background:var(--ink);color:#E6E8F2;padding:44px 0 28px}
+.pub-footer .wrap{display:flex;flex-wrap:wrap;gap:24px 48px;justify-content:space-between;align-items:flex-start}
+.pub-footer a{color:#fff}
+.pub-footer .logo{color:#fff}
+.pub-footer .logo-text small{color:#B9BEDA}
+.pub-footer .fine{width:100%;border-top:1px solid rgba(255,255,255,.15);padding-top:16px;font-size:.85rem;color:#B9BEDA}
+.back-link{display:inline-block;margin-bottom:18px;font-weight:600}
+
+/* responsive */
+@media (max-width:860px){
+  .two,.founder-grid,.quotes,.enroll-grid{grid-template-columns:1fr}
+  .books{grid-template-columns:1fr}
+  .team{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .media-row{grid-template-columns:1fr 1fr}
+  .media-row > :first-child{grid-column:1 / -1}
+  .pub-nav a:not(.btn){padding:8px 8px}
+}
+@media (max-width:640px){
+  .pub-inner{padding:10px 16px;gap:8px;flex-wrap:wrap}
+  .pub-cta{margin-left:auto}
+  .pub-nav{order:3;width:100%;margin-left:0;justify-content:space-between}
+  .pub-nav a{padding:8px 6px;white-space:nowrap}
+  .wrap{padding:0 16px}
+  .grid-2{grid-template-columns:1fr}
+  .book-imgs{height:210px}
+  .team{gap:14px}
+  .hero .wrap{grid-template-columns:1fr}
+  .hero-shelf{height:110px;margin-top:-20px}
+  .hero-copy{padding-bottom:28px}
+}
+@media (max-width:1020px){
+  .menu-toggle{display:inline-flex}
+  nav.main{display:none;position:absolute;left:0;right:0;top:100%;background:var(--paper);border-bottom:2px solid var(--line);flex-direction:column;padding:10px 16px 16px;gap:2px}
+  nav.main.open{display:flex}
+  nav.main a{padding:12px 14px;font-size:1rem}
+  .nav-row{padding:0}
+}
+@media (max-width:860px){
+  #login-view{grid-template-columns:1fr}
+  .login-art{padding:28px 20px}
+  .login-art h1{margin-top:20px}
+  .shelf{height:70px;margin-top:20px}
+  .shelf b{width:22px}
+  .home-grid,.bt-hero,.bt-cols{grid-template-columns:1fr}
+  .globe{max-width:200px}
+}
+@media (max-width:640px){
+  main#page{padding:20px 16px 70px}
+  .top-inner{padding:10px 16px;gap:10px}
+  .who-name{display:none}
+  .logo-text small{display:none}
+  .person{grid-template-columns:40px minmax(0,1fr) auto;row-gap:10px}
+  .person .actions{grid-column:1 / -1;justify-content:flex-start}
+  .avatar{width:40px;height:40px}
+  .quick{grid-template-columns:1fr}
+  /* tables become cards */
+  table.data thead{display:none}
+  table.data, table.data tbody, table.data tr, table.data td{display:block;width:100%}
+  table.data tr{border:2px solid var(--line);border-radius:var(--r);margin-bottom:12px;background:#fff;padding:6px 4px;overflow:hidden}
+  table.data td{border:0;padding:6px 12px;display:flex;gap:12px;justify-content:space-between;align-items:center;text-align:right}
+  table.data td::before{content:attr(data-label);font-weight:600;font-size:.8rem;color:var(--ink-2);text-align:left;flex:none}
+  table.data td.no-label::before{display:none}
+  table.data td.no-label{justify-content:flex-start;text-align:left}
+  tr.is-deduct{border-color:var(--red)!important}
+  tr.is-deduct td{background:var(--red-tint)}
+  tr.is-deduct td:first-child{box-shadow:none}
+  table.menu-table td.thumb-cell{justify-content:center}
+  table.menu-table .menu-thumb{width:100%;height:150px}
+  table.menu-table td{text-align:left}
+}
+@media (prefers-reduced-motion:no-preference){
+  .modal{animation:pop .16s ease-out}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 40 40">
+    <rect x="1" y="1" width="38" height="38" rx="11" fill="#E8202A"/>
+    <path d="M8 13c4-1.6 8-1.2 12 1.3V31c-4-2.5-8-2.9-12-1.3Z" fill="#FFFEEC"/>
+    <path d="M32 13c-4-1.6-8-1.2-12 1.3V31c4-2.5 8-2.9 12-1.3Z" fill="#FFCB05"/>
+    <path d="M20 14.3V31" stroke="#1E2440" stroke-width="1.6"/>
+  </symbol>
+</svg>
+
+<!-- ============ PUBLIC WEBSITE ============ -->
+<div id="public-view" class="hidden">
+  <header class="pub-header">
+    <div class="pub-inner">
+      <a class="logo" href="#site"><svg class="logo-mark"><use href="#mark"/></svg><div class="logo-text">BookNook4Kids<small>BookNook4Kids.org</small></div></a>
+      <nav class="pub-nav" aria-label="Website">
+        <a href="#site" data-pub="site">Home</a>
+        <a href="#about" data-pub="about">About</a>
+        <a href="#leaderboard" data-pub="leaderboard">Leaderboard</a>
+        <a href="#login" id="staff-link">Staff login</a>
+      </nav>
+      <a href="#enroll" class="btn btn-red btn-sm pub-cta">Enroll Now</a>
+    </div>
+  </header>
+  <main id="pub-page"></main>
+  <footer class="pub-footer">
+    <div class="wrap">
+      <div>
+        <div class="logo"><svg class="logo-mark"><use href="#mark"/></svg><div class="logo-text">BookNook4Kids<small>BookNook4Kids.org</small></div></div>
+      </div>
+      <div>
+        <p>232 5th Ave. Kirkland, WA 96033</p>
+        <p><a href="mailto:contact@booknook4kids.org">contact@booknook4kids.org</a></p>
+        <p>Tel. <a href="tel:2067783030">206-778-3030</a></p>
+      </div>
+      <div>
+        <p><a href="#about">About</a></p>
+        <p><a href="#leaderboard">Leaderboard</a></p>
+        <p><a href="#enroll">Enroll Now</a></p>
+        <p><a href="#login">Staff login</a></p>
+      </div>
+      <p class="fine">© 2023 by BookNook4Kids.org</p>
+    </div>
+  </footer>
+</div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login-view" class="hidden">
+  <div class="login-art">
+    <div>
+      <div class="logo"><svg class="logo-mark"><use href="#mark"/></svg><div class="logo-text">BookNook4Kids Cafe<small>BookNook4Kids.org</small></div></div>
+      <h1>Read, earn, and treat yourself.</h1>
+      <p>The staff hub for our reading program: track NewGen Wallet points, order from the cafe menu, and join Book Talk Around the World.</p>
+    </div>
+    <div aria-hidden="true">
+      <div class="shelf" id="shelf"></div>
+      <div class="shelf-board"></div>
+    </div>
+  </div>
+  <div class="login-panel">
+    <form class="login-box" id="login-form" novalidate>
+      <a href="#site" class="back-link">Back to the BookNook4Kids website</a>
+      <h2>Staff login</h2>
+      <p class="hint">Accounts are created by a supervisor. There's no public sign-up.</p>
+      <div class="role-switch" role="group" aria-label="Login type">
+        <button type="button" data-role="counselor" aria-pressed="true">Counselor Login</button>
+        <button type="button" data-role="supervisor" aria-pressed="false">Supervisor Login</button>
+      </div>
+      <div class="form-error hidden" id="login-error" role="alert"></div>
+      <label class="field"><span>Email</span><input type="email" id="login-email" autocomplete="username" required></label>
+      <label class="field"><span>Password</span><input type="password" id="login-password" autocomplete="current-password" required></label>
+      <button class="btn btn-primary btn-big" style="width:100%" type="submit" id="login-submit">Log in as counselor</button>
+    </form>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app-view" class="hidden">
+  <header class="top">
+    <div class="spines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="top-inner">
+      <button class="btn btn-ghost menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <a class="logo" href="#dashboard"><svg class="logo-mark"><use href="#mark"/></svg><div class="logo-text">BookNook4Kids Cafe<small>NewGen Wallet</small></div></a>
+      <div class="who">
+        <div class="who-name"><b id="who-name"></b><span class="role-pill" id="who-role"></span></div>
+        <button class="btn btn-sm" id="logout-btn">Log out</button>
+      </div>
+    </div>
+    <div class="nav-row"><nav class="main" id="main-nav" aria-label="Main"></nav></div>
+  </header>
+  <main id="page" tabindex="-1"></main>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+/* ===================== CONFIG (public values only) ===================== */
+const SUPABASE_URL = 'https://pmxbofwrcztccfezidmc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteGJvZndyY3p0Y2NmZXppZG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2NDM2NjYsImV4cCI6MjEwNzIxOTY2Nn0.hUJGgj-9H52gxvBwj7bn4QMGH-bMmWM6zWl0ZF8MmTs';
+/* ======================================================================= */
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtPts = n => Number(n || 0).toLocaleString();
+const fmtTime = t => new Date(t).toLocaleString([], {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'});
+const COLORS = ['#E8202A','#0088CB','#8E2BB0','#2E8B57','#D99A00','#006699'];
+const colorFor = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
+const initial = s => esc((String(s || '?').trim()[0] || '?').toUpperCase());
+const errMsg = e => e?.message || String(e || 'Something went wrong');
+
+let me = null;            // current profile row
+let loginRole = 'counselor';
+let currentRoute = '';
+
+/* ---------------- toast & modal ---------------- */
+function toast(msg, isErr = false) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+function openModal(html, onMount) {
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="modal-back"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  const back = $('.modal-back', root);
+  const close = () => { root.innerHTML = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  back.addEventListener('click', e => { if (e.target === back) close(); });
+  $$('[data-close]', root).forEach(b => b.addEventListener('click', close));
+  const first = $('input,select,textarea,button:not([data-close])', root);
+  if (first) first.focus();
+  onMount && onMount($('.modal', root), close);
+  return close;
+}
+
+/* ---------------- login ---------------- */
+function drawShelf() {
+  const cols = ['#E8202A','#FFCB05','#FFFEEC','#8E2BB0','#2E8B57','#E8202A','#FFFEEC','#FFCB05','#8E2BB0','#FFFEEC','#2E8B57'];
+  const hs = [92,70,100,84,62,96,78,88,66,100,80];
+  $('#shelf').innerHTML = cols.map((c, i) => `<b style="background:${c};height:${hs[i]}%"></b>`).join('');
+}
+function setLoginRole(role) {
+  loginRole = role;
+  $$('.role-switch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === role)));
+  $('#login-submit').textContent = role === 'supervisor' ? 'Log in as supervisor' : 'Log in as counselor';
+  $('#login-error').classList.add('hidden');
+}
+$$('.role-switch button').forEach(b => b.addEventListener('click', () => setLoginRole(b.dataset.role)));
+
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#login-email').value.trim(), password = $('#login-password').value;
+  const errBox = $('#login-error'), btn = $('#login-submit');
+  const fail = m => { errBox.textContent = m; errBox.classList.remove('hidden'); btn.disabled = false; };
+  errBox.classList.add('hidden');
+  if (!email || !password) return fail('Enter your email and password.');
+  btn.disabled = true;
+  const { data: exists, error: lookupErr } = await sb.rpc('login_account_exists', { p_email: email, p_role: loginRole });
+  if (lookupErr) return fail('Could not reach the server. Check your connection and try again.');
+  if (!exists) return fail('Account not found');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return fail(/invalid login credentials/i.test(error.message) ? 'Incorrect password' : error.message);
+  btn.disabled = false;
+  $('#login-password').value = '';
+  me = await loadMe();
+  if (!me) { await sb.auth.signOut(); return fail('Account not found'); }
+  goTo('dashboard');
+});
+
+$('#logout-btn').addEventListener('click', async () => { await sb.auth.signOut(); me = null; stopRealtime(); goTo('login'); });
+
+function showOnly(id) {
+  ['public-view','login-view','app-view'].forEach(v => $('#' + v).classList.toggle('hidden', v !== id));
+}
+function showLogin() {
+  stopRealtime();
+  showOnly('login-view');
+  document.title = 'Staff login · BookNook4Kids Cafe';
+}
+function goTo(h) { if (location.hash === '#' + h) navigate(); else location.hash = h; }
+
+/* ---------------- boot ---------------- */
+async function loadMe() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  return data;
+}
+let appReady = false;
+function enterApp() {
+  showOnly('app-view');
+  $('#who-name').textContent = me.name;
+  $('#who-role').textContent = me.role === 'supervisor' ? 'Supervisor' : 'Counselor';
+  $('#who-role').className = 'role-pill ' + me.role;
+  if (!appReady) { buildNav(); startRealtime(); appReady = true; }
+}
+
+/* top-level router: public site, login, or staff hub */
+const PUBLIC = ['site', 'about', 'leaderboard', 'enroll'];
+async function navigate() {
+  const h = (location.hash || '#site').slice(1).split('?')[0] || 'site';
+  if (PUBLIC.includes(h)) { showPublic(h); return; }
+  if (h === 'login') { if (me) { goTo('dashboard'); return; } showLogin(); return; }
+  if (!me) { location.replace('#login'); return; }
+  enterApp();
+  route();
+}
+
+/* ---------------- nav & routing ---------------- */
+const ROUTES = [
+  { id:'dashboard', label:'Dashboard',          render: renderHome },
+  { id:'board',     label:'Leaderboard',        render: renderLeaderboard },
+  { id:'students',  label:'Students',           render: renderStudents },
+  { id:'menu',      label:'Menu',               render: renderMenu },
+  { id:'activity',  label:'Activity Log',       render: renderActivity },
+  { id:'orders',    label:'Order History',      render: renderOrderHistory },
+  { id:'booktalk',  label:'Book Talk',          render: renderBookTalk },
+  { id:'staff',     label:'Manage Staff',       render: renderCounselors, sup:true },
+  { id:'fulfill',   label:'Orders to Fulfill',  render: renderFulfill, sup:true },
+  { id:'enrollments',label:'Enroll Requests',   render: renderEnrollments, sup:true },
+];
+function buildNav() {
+  $('#main-nav').innerHTML = ROUTES.filter(r => !r.sup || me.role === 'supervisor')
+    .map(r => `<a href="#${r.id}" data-id="${r.id}" class="${r.sup ? 'sup' : ''}">${r.label}</a>`).join('')
+    + `<a href="#site">Website</a>`;
+  $$('#main-nav a').forEach(a => a.addEventListener('click', () => toggleNav(false)));
+}
+function toggleNav(open) {
+  $('#main-nav').classList.toggle('open', open);
+  $('#menu-toggle').setAttribute('aria-expanded', String(open));
+}
+$('#menu-toggle').addEventListener('click', () => toggleNav(!$('#main-nav').classList.contains('open')));
+window.addEventListener('hashchange', navigate);
+
+async function route(soft = false) {
+  let id = (location.hash || '#dashboard').slice(1).split('?')[0];
+  let r = ROUTES.find(x => x.id === id);
+  if (!r || (r.sup && me.role !== 'supervisor')) { r = ROUTES[0]; id = 'dashboard'; }
+  const changed = id !== currentRoute;
+  currentRoute = id;
+  $$('#main-nav a').forEach(a => a.dataset.id === id ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
+  document.title = r.label + ' · BookNook4Kids Cafe';
+  const page = $('#page');
+  if (!soft) page.innerHTML = '<div class="loading">Loading…</div>';
+  try { await r.render(page, soft); }
+  catch (e) { page.innerHTML = `<div class="panel empty"><b>This page couldn't load</b>${esc(errMsg(e))}</div>`; }
+  if (changed && !soft) { window.scrollTo(0, 0); }
+}
+
+/* ---------------- realtime: refresh views when anyone changes data ---------------- */
+let channel = null, rtTimer = null;
+function startRealtime() {
+  stopRealtime();
+  channel = sb.channel('booknook-live');
+  ['profiles','students','menu_items','orders','point_logs','settings'].forEach(t =>
+    channel.on('postgres_changes', { event:'*', schema:'public', table:t }, () => {
+      clearTimeout(rtTimer);
+      rtTimer = setTimeout(async () => {
+        if (!me) return;
+        if ($('#modal-root').innerHTML) return; // don't disturb an open dialog
+        const fresh = await loadMe();
+        if (!fresh) { await sb.auth.signOut(); me = null; stopRealtime(); goTo('login'); return; }
+        me = fresh;
+        if (!$('#app-view').classList.contains('hidden')) route(true);
+      }, 400);
+    }));
+  channel.subscribe();
+}
+function stopRealtime() { if (channel) { sb.removeChannel(channel); channel = null; } appReady = false; }
+async function refreshMe() { me = await loadMe() || me; }
+
+/* ---------------- shared data helpers ---------------- */
+async function q(promise) { const { data, error } = await promise; if (error) throw error; return data; }
+const getStudents = () => q(sb.from('students').select('*').order('name'));
+const getStaff = () => q(sb.from('profiles').select('*').order('role', { ascending:false }).order('name'));
+const canChangeStaffPoints = () => me.role === 'supervisor';
+
+/* points dialogs */
+function pointsDialog(kind, target) {
+  // kind: 'add' | 'deduct'; target: {type:'student'|'staff', id, name, points}
+  const isDeduct = kind === 'deduct';
+  openModal(`
+    <h2>${isDeduct ? 'Deduct points from' : 'Add points to'} ${esc(target.name)}</h2>
+    <p class="hint" style="margin-bottom:14px">Current balance: <b>${fmtPts(target.points)} pts</b></p>
+    <form id="pts-form" novalidate>
+      <div class="form-error hidden" id="pts-err" role="alert"></div>
+      <label class="field"><span>Amount</span><input type="number" id="pts-amt" min="1" step="1" inputmode="numeric" required></label>
+      ${isDeduct ? `<label class="field"><span>Justification (required)</span><textarea id="pts-why" placeholder="Why are these points being deducted?" required></textarea></label>` : ''}
+      <div class="modal-actions">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn ${isDeduct ? 'btn-red' : 'btn-primary'}">${isDeduct ? 'Deduct points' : 'Add points'}</button>
+      </div>
+    </form>`, (m, close) => {
+    $('#pts-form', m).addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = $('#pts-err', m), btn = $('button[type=submit]', m);
+      const show = t => { err.textContent = t; err.classList.remove('hidden'); };
+      const amt = Number($('#pts-amt', m).value);
+      if (!Number.isInteger(amt) || amt <= 0) return show('Enter a whole number greater than 0.');
+      const why = isDeduct ? $('#pts-why', m).value.trim() : null;
+      if (isDeduct && !why) return show('Write a justification before deducting points.');
+      if (isDeduct && amt > target.points) return show(`${target.name} only has ${fmtPts(target.points)} points.`);
+      btn.disabled = true;
+      const { error } = await sb.rpc('adjust_points', { p_target_type: target.type, p_target_id: target.id, p_direction: kind, p_amount: amt, p_justification: why });
+      if (error) { btn.disabled = false; return show(errMsg(error)); }
+      close();
+      toast(isDeduct ? `Deducted ${fmtPts(amt)} points from ${target.name}` : `Added ${fmtPts(amt)} points to ${target.name}`);
+      await refreshMe(); route(true);
+    });
+  });
+}
+
+/* ===================== PAGES ===================== */
+
+/* ----- Home ----- */
+async function renderHome(page) {
+  const [logs, pending] = await Promise.all([
+    q(sb.from('point_logs').select('*').order('created_at', { ascending:false }).limit(6)),
+    me.role === 'supervisor' ? q(sb.from('orders').select('id', { count:'exact', head:false }).eq('status','pending')) : Promise.resolve(null),
+  ]);
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  page.innerHTML = `
+    <div class="page-head"><div><h1>${hello}, ${esc(me.name)}</h1><p>Here's your wallet and what's happening in the cafe.</p></div></div>
+    <div class="home-grid">
+      <div>
+        <div class="wallet" aria-label="Your NewGen Wallet balance">
+          <div class="wallet-top">
+            <div><div class="wallet-title">NewGen Wallet</div><div class="wallet-holder">${esc(me.name)}</div></div>
+            <div class="wallet-stamp">${me.role === 'supervisor' ? 'Supervisor' : 'Counselor'}</div>
+          </div>
+          <div class="wallet-balance">${fmtPts(me.points)}<small>points</small></div>
+        </div>
+        <div class="quick">
+          <a href="#menu" class="q-red"><b>Order from the menu</b><span>For yourself or a student</span></a>
+          <a href="#students" class="q-green"><b>Give student points</b><span>Add or deduct points</span></a>
+          <a href="#booktalk" class="q-grape"><b>Join the live reading</b><span>Book Talk Around the World</span></a>
+          ${me.role === 'supervisor'
+            ? `<a href="#fulfill" class="q-sun"><b>Orders to fulfill</b><span>${pending.length} waiting to be given</span></a>`
+            : `<a href="#orders" class="q-blue"><b>My order history</b><span>Everything you've ordered</span></a>`}
+        </div>
+      </div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h2>Latest point changes</h2><a href="#activity">See all</a></div>
+        ${logs.length ? `<ul class="people">${logs.map(l => `
+          <li class="person" style="grid-template-columns:44px minmax(0,1fr) auto">
+            <div class="avatar" style="background:${colorFor(l.target_name)}">${initial(l.target_name)}</div>
+            <div><div class="person-name">${esc(l.target_name)}</div><div class="person-sub">${l.kind === 'order' ? esc(l.justification) : (l.amount > 0 ? 'Added' : 'Deducted') + ' by ' + esc(l.actor_name)} · ${fmtTime(l.created_at)}</div></div>
+            <div class="amt ${l.amount > 0 ? 'plus' : 'minus'}">${l.amount > 0 ? '+' : '−'}${fmtPts(Math.abs(l.amount))}</div>
+          </li>`).join('')}</ul>`
+          : `<div class="empty"><b>No point changes yet</b>Add points to a student to get things started.</div>`}
+      </div>
+    </div>
+    `;
+}
+
+/* ----- Leaderboard (staff) ----- */
+async function renderLeaderboard(page) {
+  const [ranked, items] = await Promise.all([
+    q(sb.from('students').select('id,name,points').order('points', { ascending:false }).order('name')),
+    q(sb.from('menu_items').select('*').order('sort_order').order('created_at')),
+  ]);
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Student leaderboard</h1><p>Every student ranked by NewGen Wallet points. It updates as soon as points change. The public website shows the top 10 with first names and last initials only.</p></div></div>
+    <div class="board-layout">
+      <section class="panel board">
+        ${ranked.length ? boardList(ranked, ranked)
+          : `<div class="empty"><b>No students yet</b>Add students on the Students page and they'll be ranked here.</div>`}
+      </section>
+      ${miniMenu(items, `<a href="#menu" class="btn btn-red" style="width:100%;margin-top:14px">Order from the menu</a>`)}
+    </div>`;
+}
+
+// Compact menu shown beside the leaderboard (staff and public).
+function miniMenu(items, footer = '') {
+  return `<aside class="panel mini-menu" aria-labelledby="mini-menu-h">
+    <h2 id="mini-menu-h">Cafe menu</h2>
+    <p class="hint">What students can spend their points on.</p>
+    ${items.length ? `<ul class="mini-list">${items.map(it => `
+      <li class="mini-item">
+        ${it.image_url ? `<img class="menu-thumb" src="${esc(it.image_url)}" alt="" loading="lazy">`
+          : `<div class="menu-thumb ph" style="background:${colorFor(it.name)}" aria-hidden="true">${initial(it.name)}</div>`}
+        <div><b>${esc(it.name)}</b>${it.description ? `<span class="d">${esc(it.description)}</span>` : ''}</div>
+        <span class="cost">${fmtPts(it.cost)}<small>pts</small></span>
+      </li>`).join('')}</ul>` : `<div class="empty"><b>The menu is empty</b>Items will appear here soon.</div>`}
+    ${footer}
+  </aside>`;
+}
+// Leaderboard rows (shared by the staff and public leaderboard pages). `all` is the full sorted list, used for tie-aware ranks.
+function boardList(rows, all) {
+  const top = (all[0] && all[0].points) || 1;
+  return `<ol class="board-list">${rows.map(s => {
+    const rank = all.findIndex(x => x.points === s.points) + 1; // ties share a rank
+    const name = s.name ?? s.display_name;
+    return `<li class="board-row${rank <= 3 && s.points > 0 ? ' r' + rank : ''}">
+      <span class="board-rank" aria-label="Rank ${rank}">${rank}</span>
+      <span class="board-name">${esc(name)}</span>
+      <span class="board-bar" aria-hidden="true"><i style="width:${Math.max(2, Math.round(s.points / top * 100))}%"></i></span>
+      <span class="board-pts">${fmtPts(s.points)}<small>pts</small></span>
+    </li>`; }).join('')}</ol>`;
+}
+
+/* ----- Students (and staff balances) ----- */
+let studentsTab = 'students', studentsFilter = '';
+async function renderStudents(page) {
+  const [students, staff] = await Promise.all([getStudents(), getStaff()]);
+  page.innerHTML = `
+    <div class="page-head">
+      <div><h1>Students</h1><p>Every student's NewGen Wallet. Use Add or Deduct to change points; every change is recorded in the Activity Log.</p></div>
+      <button class="btn btn-primary" id="add-student">Add student</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="students" aria-selected="${studentsTab === 'students'}">Students (${students.length})</button>
+      <button role="tab" data-tab="staff" aria-selected="${studentsTab === 'staff'}">Counselors &amp; supervisors (${staff.length})</button>
+    </div>
+    <div class="panel">
+      <div class="toolbar"><input type="text" id="people-search" placeholder="Search by name" value="${esc(studentsFilter)}" aria-label="Search by name"></div>
+      <ul class="people" id="people-list"></ul>
+    </div>`;
+  const draw = () => {
+    const f = studentsFilter.toLowerCase();
+    const list = $('#people-list');
+    if (studentsTab === 'students') {
+      const rows = students.filter(s => s.name.toLowerCase().includes(f));
+      list.innerHTML = rows.length ? rows.map(s => `
+        <li class="person">
+          <div class="avatar" style="background:${colorFor(s.name)}">${initial(s.name)}</div>
+          <div><div class="person-name">${esc(s.name)}</div><div class="person-sub">Student</div></div>
+          <div class="pts">${fmtPts(s.points)}<small>pts</small></div>
+          <div class="actions">
+            <button class="btn btn-sm btn-add" data-act="add" data-id="${s.id}">+ Add</button>
+            <button class="btn btn-sm btn-deduct" data-act="deduct" data-id="${s.id}">− Deduct</button>
+            <button class="btn btn-sm btn-ghost" data-act="edit" data-id="${s.id}">Edit</button>
+            <button class="btn btn-sm btn-ghost" data-act="remove" data-id="${s.id}">Remove</button>
+          </div>
+        </li>`).join('')
+        : `<li class="empty"><b>${students.length ? 'No students match that name' : 'No students yet'}</b>${students.length ? 'Try a different spelling.' : 'Use "Add student" to create the first profile.'}</li>`;
+    } else {
+      const rows = staff.filter(s => s.name.toLowerCase().includes(f));
+      list.innerHTML = rows.length ? rows.map(s => `
+        <li class="person">
+          <div class="avatar" style="background:${colorFor(s.name)}">${initial(s.name)}</div>
+          <div><div class="person-name">${esc(s.name)}${s.id === me.id ? ' (you)' : ''}</div><div class="person-sub"><span class="role-pill ${s.role}">${s.role === 'supervisor' ? 'Supervisor' : 'Counselor'}</span></div></div>
+          <div class="pts">${fmtPts(s.points)}<small>pts</small></div>
+          <div class="actions">${canChangeStaffPoints() ? `
+            <button class="btn btn-sm btn-add" data-act="add" data-id="${s.id}">+ Add</button>
+            <button class="btn btn-sm btn-deduct" data-act="deduct" data-id="${s.id}">− Deduct</button>` : ''}
+          </div>
+        </li>`).join('')
+        : `<li class="empty"><b>No one matches that name</b>Try a different spelling.</li>`;
+    }
+  };
+  draw();
+  $$('.tabs button', page).forEach(b => b.addEventListener('click', () => { studentsTab = b.dataset.tab; renderStudents(page); }));
+  $('#people-search').addEventListener('input', e => { studentsFilter = e.target.value; draw(); });
+  $('#add-student').addEventListener('click', () => studentDialog());
+  $('#people-list').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    if (studentsTab === 'students') {
+      const s = students.find(x => x.id === b.dataset.id);
+      if (b.dataset.act === 'add' || b.dataset.act === 'deduct') pointsDialog(b.dataset.act, { type:'student', id:s.id, name:s.name, points:s.points });
+      if (b.dataset.act === 'edit') studentDialog(s);
+      if (b.dataset.act === 'remove') removeStudent(s);
+    } else {
+      if (!canChangeStaffPoints()) return;
+      const s = staff.find(x => x.id === b.dataset.id);
+      pointsDialog(b.dataset.act, { type:'staff', id:s.id, name:s.name, points:s.points });
+    }
+  });
+}
+function studentDialog(student) {
+  const editing = !!student;
+  openModal(`
+    <h2>${editing ? 'Edit student' : 'Add student'}</h2>
+    <form id="stu-form" novalidate>
+      <div class="form-error hidden" id="stu-err" role="alert"></div>
+      <label class="field"><span>Student name</span><input type="text" id="stu-name" value="${esc(student?.name || '')}" required></label>
+      ${editing ? `<p class="hint">To change points, use + Add or − Deduct so the change is logged.</p>` :
+        `<label class="field"><span>Starting points (optional)</span><input type="number" id="stu-pts" min="0" step="1" inputmode="numeric" placeholder="0"></label>`}
+      <div class="modal-actions">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">${editing ? 'Save changes' : 'Add student'}</button>
+      </div>
+    </form>`, (m, close) => {
+    $('#stu-form', m).addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = $('#stu-err', m), btn = $('button[type=submit]', m);
+      const show = t => { err.textContent = t; err.classList.remove('hidden'); btn.disabled = false; };
+      const name = $('#stu-name', m).value.trim();
+      if (!name) return show('Enter the student\'s name.');
+      btn.disabled = true;
+      if (editing) {
+        const { error } = await sb.from('students').update({ name }).eq('id', student.id);
+        if (error) return show(errMsg(error));
+        close(); toast('Student updated');
+      } else {
+        const start = Number($('#stu-pts', m).value || 0);
+        if (!Number.isInteger(start) || start < 0) return show('Starting points must be a whole number.');
+        const { data, error } = await sb.from('students').insert({ name }).select().single();
+        if (error) return show(errMsg(error));
+        if (start > 0) {
+          const { error: e2 } = await sb.rpc('adjust_points', { p_target_type:'student', p_target_id:data.id, p_direction:'add', p_amount:start, p_justification:null });
+          if (e2) toast('Student added, but starting points failed: ' + errMsg(e2), true);
+        }
+        close(); toast('Student added');
+      }
+      route(true);
+    });
+  });
+}
+function removeStudent(s) {
+  openModal(`
+    <h2>Remove ${esc(s.name)}?</h2>
+    <p>This deletes the student profile and their ${fmtPts(s.points)} points. Their past orders and activity stay in the records.</p>
+    <div class="modal-actions"><button class="btn" data-close>Cancel</button><button class="btn btn-red" id="do-remove">Remove student</button></div>`, (m, close) => {
+    $('#do-remove', m).addEventListener('click', async () => {
+      const { error } = await sb.from('students').delete().eq('id', s.id);
+      if (error) return toast(errMsg(error), true);
+      close(); toast('Student removed'); route(true);
+    });
+  });
+}
+
+/* ----- Menu ----- */
+async function renderMenu(page) {
+  const items = await q(sb.from('menu_items').select('*').order('sort_order').order('created_at'));
+  const sup = me.role === 'supervisor';
+  page.innerHTML = `
+    <div class="page-head">
+      <div><h1>Menu</h1><p>Spend NewGen Wallet points on treats and prizes. Order for yourself or for a student.</p></div>
+      ${sup ? `<button class="btn btn-primary" id="add-item">Add menu item</button>` : ''}
+    </div>
+    <div class="panel" style="padding:10px 16px">
+      ${items.length ? `<table class="data menu-table">
+        <thead><tr><th style="width:110px">Picture</th><th>Item</th><th>Description</th><th>Cost</th><th></th></tr></thead>
+        <tbody>${items.map(it => `
+          <tr>
+            <td class="no-label thumb-cell">${it.image_url
+              ? `<img class="menu-thumb" src="${esc(it.image_url)}" alt="${esc(it.name)}" loading="lazy">`
+              : `<div class="menu-thumb ph" style="background:${colorFor(it.name)}" aria-hidden="true">${initial(it.name)}</div>`}</td>
+            <td class="no-label"><div class="menu-name">${esc(it.name)}</div></td>
+            <td class="no-label"><div class="menu-desc">${esc(it.description)}</div></td>
+            <td data-label="Cost"><span class="cost">${fmtPts(it.cost)}<small>pts</small></span></td>
+            <td class="no-label"><div class="actions">
+              <button class="btn btn-red btn-sm" data-act="order" data-id="${it.id}">Order</button>
+              ${sup ? `<button class="btn btn-ghost btn-sm" data-act="edit" data-id="${it.id}">Edit</button>
+                       <button class="btn btn-ghost btn-sm" data-act="remove" data-id="${it.id}">Remove</button>` : ''}
+            </div></td>
+          </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>The menu is empty</b>${sup ? 'Use "Add menu item" to put something on it.' : 'A supervisor will add items soon.'}</div>`}
+    </div>`;
+  if (sup) $('#add-item').addEventListener('click', () => menuItemDialog());
+  page.querySelector('.panel').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const it = items.find(x => x.id === b.dataset.id); if (!it) return;
+    if (b.dataset.act === 'order') orderDialog(it);
+    if (b.dataset.act === 'edit') menuItemDialog(it);
+    if (b.dataset.act === 'remove') removeMenuItem(it);
+  });
+}
+async function orderDialog(item) {
+  const students = await getStudents();
+  await refreshMe();
+  openModal(`
+    <h2>Order ${esc(item.name)}</h2>
+    <label class="field"><span>Who is this order for?</span>
+      <select id="ord-for">
+        <option value="">Myself (${esc(me.name)}, ${fmtPts(me.points)} pts)</option>
+        ${students.map(s => `<option value="${s.id}">${esc(s.name)} (${fmtPts(s.points)} pts)</option>`).join('')}
+      </select></label>
+    <div id="ord-confirm"></div>
+    <div class="modal-actions">
+      <button class="btn" data-close>No</button>
+      <button class="btn btn-red" id="ord-yes">Yes</button>
+    </div>`, (m, close) => {
+    const sel = $('#ord-for', m), box = $('#ord-confirm', m), yes = $('#ord-yes', m);
+    const buyer = () => sel.value ? students.find(s => s.id === sel.value) : me;
+    const update = () => {
+      const b = buyer(), remaining = b.points - item.cost;
+      if (remaining < 0) {
+        box.innerHTML = `<p class="confirm-line no" role="alert">You cannot purchase such an item.</p>`;
+        yes.disabled = true;
+      } else {
+        box.innerHTML = `<p class="confirm-line">Are you sure you want to buy this? ${b === me ? 'Your' : esc(b.name) + '’s'} remaining balance will be <b>${fmtPts(remaining)}</b>.</p>`;
+        yes.disabled = false;
+      }
+    };
+    sel.addEventListener('change', update); update();
+    yes.addEventListener('click', async () => {
+      yes.disabled = true;
+      const { error } = await sb.rpc('place_order', { p_item_id: item.id, p_student_id: sel.value || null });
+      if (error) {
+        box.innerHTML = `<p class="confirm-line no" role="alert">${esc(errMsg(error))}</p>`;
+        return;
+      }
+      close(); toast(`Ordered ${item.name} for ${buyer() === me ? 'you' : buyer().name}`);
+      await refreshMe(); route(true);
+    });
+  });
+}
+function menuItemDialog(item) {
+  const editing = !!item;
+  openModal(`
+    <h2>${editing ? 'Edit menu item' : 'Add menu item'}</h2>
+    <form id="mi-form" novalidate>
+      <div class="form-error hidden" id="mi-err" role="alert"></div>
+      <label class="field"><span>Item name</span><input type="text" id="mi-name" value="${esc(item?.name || '')}" required></label>
+      <label class="field"><span>Description</span><textarea id="mi-desc">${esc(item?.description || '')}</textarea></label>
+      <label class="field"><span>Point cost</span><input type="number" id="mi-cost" min="1" step="1" inputmode="numeric" value="${item?.cost ?? ''}" required></label>
+      <label class="field"><span>Picture (upload)</span><input type="file" id="mi-file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+      <label class="field"><span>…or picture link</span><input type="url" id="mi-url" placeholder="https://" value="${esc(item?.image_url || '')}"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">${editing ? 'Save changes' : 'Add item'}</button>
+      </div>
+    </form>`, (m, close) => {
+    $('#mi-form', m).addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = $('#mi-err', m), btn = $('button[type=submit]', m);
+      const show = t => { err.textContent = t; err.classList.remove('hidden'); btn.disabled = false; };
+      const name = $('#mi-name', m).value.trim(), description = $('#mi-desc', m).value.trim();
+      const cost = Number($('#mi-cost', m).value);
+      let image_url = $('#mi-url', m).value.trim() || null;
+      if (!name) return show('Enter an item name.');
+      if (!Number.isInteger(cost) || cost <= 0) return show('Point cost must be a whole number greater than 0.');
+      btn.disabled = true;
+      const file = $('#mi-file', m).files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) return show('Pictures must be under 5 MB.');
+        const path = `${crypto.randomUUID()}.${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
+        const { error: upErr } = await sb.storage.from('menu-images').upload(path, file, { contentType: file.type });
+        if (upErr) return show('Picture upload failed: ' + errMsg(upErr));
+        image_url = sb.storage.from('menu-images').getPublicUrl(path).data.publicUrl;
+      }
+      const row = { name, description, cost, image_url };
+      const { error } = editing
+        ? await sb.from('menu_items').update(row).eq('id', item.id)
+        : await sb.from('menu_items').insert({ ...row, sort_order: Date.now() % 1e9 });
+      if (error) return show(errMsg(error));
+      close(); toast(editing ? 'Menu item saved' : 'Menu item added'); route(true);
+    });
+  });
+}
+function removeMenuItem(it) {
+  openModal(`<h2>Remove ${esc(it.name)}?</h2><p>It will disappear from the menu. Past orders for it stay in the records.</p>
+    <div class="modal-actions"><button class="btn" data-close>Cancel</button><button class="btn btn-red" id="do-remove">Remove item</button></div>`, (m, close) => {
+    $('#do-remove', m).addEventListener('click', async () => {
+      const { error } = await sb.from('menu_items').delete().eq('id', it.id);
+      if (error) return toast(errMsg(error), true);
+      close(); toast('Menu item removed'); route(true);
+    });
+  });
+}
+
+/* ----- Activity Log ----- */
+let actFilter = 'all', actSearch = '';
+async function renderActivity(page) {
+  const logs = await q(sb.from('point_logs').select('*').order('created_at', { ascending:false }).limit(1000));
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Activity Log</h1><p>Every point change, newest first. Deductions and orders are highlighted in red.</p></div></div>
+    <div class="panel" style="padding:16px">
+      <div class="toolbar">
+        <div class="tabs" role="tablist" style="margin:0">
+          <button role="tab" data-f="all" aria-selected="${actFilter==='all'}">All</button>
+          <button role="tab" data-f="add" aria-selected="${actFilter==='add'}">Additions</button>
+          <button role="tab" data-f="minus" aria-selected="${actFilter==='minus'}">Deductions &amp; orders</button>
+        </div>
+        <input type="text" id="act-search" placeholder="Search names" value="${esc(actSearch)}" aria-label="Search names">
+      </div>
+      <div id="act-table"></div>
+    </div>`;
+  const draw = () => {
+    const s = actSearch.toLowerCase();
+    const rows = logs.filter(l =>
+      (actFilter === 'all' || (actFilter === 'add' ? l.amount > 0 : l.amount < 0)) &&
+      (!s || l.target_name.toLowerCase().includes(s) || l.actor_name.toLowerCase().includes(s)));
+    $('#act-table').innerHTML = rows.length ? `<table class="data">
+      <thead><tr><th>Date &amp; time</th><th>Changed by</th><th>To</th><th>Amount</th><th>Justification</th></tr></thead>
+      <tbody>${rows.map(l => `
+        <tr class="${l.amount < 0 ? 'is-deduct' : ''}">
+          <td data-label="When">${fmtTime(l.created_at)}</td>
+          <td data-label="Changed by">${esc(l.actor_name)}</td>
+          <td data-label="To">${esc(l.target_name)} ${l.target_type === 'staff' ? '<span class="tag grape">Staff</span>' : ''}</td>
+          <td data-label="Amount"><span class="amt ${l.amount > 0 ? 'plus' : 'minus'}">${l.amount > 0 ? '+' : '−'}${fmtPts(Math.abs(l.amount))}</span>${l.kind === 'order' ? ' <span class="tag red">Order</span>' : l.kind === 'deduct' ? ' <span class="tag red">Deduction</span>' : ''}</td>
+          <td data-label="Justification">${l.justification ? esc(l.justification) : '<span class="hint">None</span>'}</td>
+        </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>Nothing to show</b>${logs.length ? 'No entries match these filters.' : 'Point changes will appear here as soon as anyone adds or deducts points.'}</div>`;
+  };
+  draw();
+  $$('.tabs button', page).forEach(b => b.addEventListener('click', () => { actFilter = b.dataset.f; renderActivity(page); }));
+  $('#act-search').addEventListener('input', e => { actSearch = e.target.value; draw(); });
+}
+
+/* ----- Order History ----- */
+let historyFor = 'me';
+async function renderOrderHistory(page) {
+  const [students, staff] = await Promise.all([getStudents(), getStaff()]);
+  if (historyFor !== 'me' && !students.some(s => 's:' + s.id === historyFor) && !staff.some(s => 'p:' + s.id === historyFor)) historyFor = 'me';
+  let query = sb.from('orders').select('*').order('created_at', { ascending:false }).limit(500);
+  let who;
+  if (historyFor === 'me') { query = query.eq('profile_id', me.id); who = 'You'; }
+  else if (historyFor.startsWith('s:')) { const id = historyFor.slice(2); query = query.eq('student_id', id); who = students.find(s => s.id === id).name; }
+  else { const id = historyFor.slice(2); query = query.eq('profile_id', id); who = staff.find(s => s.id === id).name; }
+  const orders = await q(query);
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Order History</h1><p>Every completed order for one person, newest first.</p></div></div>
+    <div class="panel" style="padding:16px">
+      <div class="toolbar"><label style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%"><b style="font-size:.9rem">Show orders for</b>
+        <select id="hist-for" style="max-width:320px">
+          <option value="me">Me (${esc(me.name)})</option>
+          <optgroup label="Students">${students.map(s => `<option value="s:${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>
+          <optgroup label="Staff">${staff.filter(s => s.id !== me.id).map(s => `<option value="p:${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>
+        </select></label></div>
+      ${orders.length ? `<table class="data">
+        <thead><tr><th>Date &amp; time</th><th>Item</th><th>Cost</th><th>Ordered by</th><th>Status</th></tr></thead>
+        <tbody>${orders.map(o => `<tr>
+          <td data-label="When">${fmtTime(o.created_at)}</td>
+          <td data-label="Item"><b>${esc(o.item_name)}</b></td>
+          <td data-label="Cost"><span class="amt minus">−${fmtPts(o.cost)}</span></td>
+          <td data-label="Ordered by">${esc(o.ordered_by_name)}</td>
+          <td data-label="Status">${o.status === 'given' ? `<span class="tag green">Given</span>` : `<span class="tag sun">Waiting</span>`}</td>
+        </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>No orders yet</b>${who === 'You' ? 'Orders you place for yourself will show up here.' : esc(who) + ' hasn’t ordered anything yet.'}</div>`}
+    </div>`;
+  $('#hist-for').value = historyFor;
+  $('#hist-for').addEventListener('change', e => { historyFor = e.target.value; renderOrderHistory(page); });
+}
+
+/* ----- Book Talk ----- */
+async function renderBookTalk(page) {
+  const row = await q(sb.from('settings').select('value').eq('key', 'zoom_url').maybeSingle());
+  const zoom = row?.value || '';
+  const sup = me.role === 'supervisor';
+  page.innerHTML = `
+    <section class="bt-hero">
+      <div>
+        <h1>Book Talk Around the World by BookNook4Kids</h1>
+        <p>Kids from many countries write and illustrate together, put their pages into one shared book, and read it aloud live on Zoom.</p>
+        <a class="btn btn-big" id="join-zoom" href="${esc(zoom)}" target="_blank" rel="noopener">Join the Live Reading</a>
+        ${sup ? `<div style="margin-top:14px"><button class="btn btn-sm" id="edit-zoom" style="background:transparent;color:#fff;border-color:#fff">Edit Zoom link</button></div>` : ''}
+      </div>
+      <svg class="globe" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="78" fill="#0088CB"/>
+        <path d="M60 52c14-6 30 2 32 14s-14 14-12 26-14 18-26 10-10-24-6-34 0-12 12-16Z" fill="#2E8B57"/>
+        <path d="M118 40c18 2 34 16 38 34-10 4-18-2-26 4s-4 22-16 24-14-14-10-26 2-22 14-36Z" fill="#2E8B57"/>
+        <path d="M112 128c10-4 24 0 26 10s-6 22-18 22-18-8-16-18 0-10 8-14Z" fill="#2E8B57"/>
+        <circle cx="100" cy="100" r="78" fill="none" stroke="#1E2440" stroke-width="5"/>
+        <g transform="translate(64 150) rotate(-8)"><rect x="0" y="0" width="72" height="40" rx="5" fill="#FFFEEC" stroke="#1E2440" stroke-width="4"/><path d="M36 2v36" stroke="#1E2440" stroke-width="4"/><path d="M8 12h20M8 20h20M8 28h14M44 12h20M44 20h20M44 28h14" stroke="#E8202A" stroke-width="3" stroke-linecap="round"/></g>
+        <circle cx="36" cy="40" r="8" fill="#FFCB05"/><circle cx="168" cy="146" r="6" fill="#FFCB05"/><circle cx="170" cy="40" r="5" fill="#F3CDFE"/>
+      </svg>
+    </section>
+    <div class="bt-cols">
+      <div class="panel"><h3>Kids around the world</h3><p>Readers and writers join from different countries, including children in shelters and orphanages connected through the BookNook4Kids online network.</p></div>
+      <div class="panel"><h3>One book, made together</h3><p>Each child contributes a page, a character, or a drawing. Together, they shape one story that belongs to all of them.</p></div>
+      <div class="panel"><h3>Live Zoom read-alouds</h3><p>When the book is ready, everyone meets on Zoom to read it aloud, share their pages, and cheer each other on.</p></div>
+    </div>`;
+  if (!zoom) { $('#join-zoom').removeAttribute('href'); $('#join-zoom').setAttribute('aria-disabled','true'); }
+  if (sup) $('#edit-zoom').addEventListener('click', () => openModal(`
+      <h2>Edit Zoom link</h2>
+      <form id="zoom-form" novalidate>
+        <div class="form-error hidden" id="zoom-err" role="alert"></div>
+        <label class="field"><span>Zoom meeting link</span><input type="url" id="zoom-url" value="${esc(zoom)}" placeholder="https://zoom.us/j/..." required></label>
+        <div class="modal-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn btn-primary" type="submit">Save link</button></div>
+      </form>`, (m, close) => {
+      $('#zoom-form', m).addEventListener('submit', async e => {
+        e.preventDefault();
+        const v = $('#zoom-url', m).value.trim(), err = $('#zoom-err', m);
+        if (!/^https?:\/\/\S+$/i.test(v)) { err.textContent = 'Enter a full link starting with https://'; err.classList.remove('hidden'); return; }
+        const { error } = await sb.from('settings').update({ value: v, updated_at: new Date().toISOString() }).eq('key', 'zoom_url');
+        if (error) { err.textContent = errMsg(error); err.classList.remove('hidden'); return; }
+        close(); toast('Zoom link saved'); route(true);
+      });
+    }));
+}
+
+/* ----- Manage Counselors (supervisor) ----- */
+async function callManage(body) {
+  const { data, error } = await sb.functions.invoke('manage-counselors', { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); if (j?.error) msg = j.error; } catch {}
+    throw new Error(msg);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+async function renderCounselors(page) {
+  const staff = await getStaff();
+  const sups = staff.filter(s => s.role === 'supervisor'), cons = staff.filter(s => s.role === 'counselor');
+  const row = c => `
+        <li class="person" style="grid-template-columns:44px minmax(0,1fr) auto">
+          <div class="avatar" style="background:${colorFor(c.name)}">${initial(c.name)}</div>
+          <div><div class="person-name">${esc(c.name)}${c.id === me.id ? ' (you)' : ''}</div><div class="person-sub">${esc(c.email)} · ${fmtPts(c.points)} pts</div></div>
+          <div class="actions">
+            <button class="btn btn-sm" data-act="edit" data-id="${c.id}">Edit</button>
+            ${c.id === me.id ? '' : `<button class="btn btn-sm btn-deduct" data-act="remove" data-id="${c.id}">Remove</button>`}
+          </div>
+        </li>`;
+  page.innerHTML = `
+    <div class="page-head">
+      <div><h1>Manage Staff</h1><p>Add counselor or supervisor accounts, change their details, or remove them. New accounts can log in right away from any device.</p></div>
+      <button class="btn btn-primary" id="add-staff">Add staff account</button>
+    </div>
+    <div class="panel">
+      <h2 style="margin-bottom:6px">Counselors (${cons.length})</h2>
+      ${cons.length ? `<ul class="people">${cons.map(row).join('')}</ul>` : `<div class="empty"><b>No counselors yet</b>Use "Add staff account" to create the first one.</div>`}
+    </div>
+    <div class="panel">
+      <h2 style="margin-bottom:6px">Supervisors (${sups.length})</h2>
+      <ul class="people">${sups.map(row).join('')}</ul>
+    </div>`;
+  $('#add-staff').addEventListener('click', () => staffDialog());
+  $$('.panel', page).forEach(p => p.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const c = staff.find(x => x.id === b.dataset.id);
+    if (b.dataset.act === 'edit') staffDialog(c);
+    if (b.dataset.act === 'remove') openModal(`
+      <h2>Remove ${esc(c.name)}?</h2>
+      <p>Their ${c.role} account is deleted and they can no longer log in. Their name stays on past activity and orders.</p>
+      <div class="modal-actions"><button class="btn" data-close>Cancel</button><button class="btn btn-red" id="do-remove">Remove ${c.role}</button></div>`, (m, close) => {
+      $('#do-remove', m).addEventListener('click', async ev => {
+        ev.target.disabled = true;
+        try { await callManage({ action:'delete', id:c.id }); close(); toast(`${c.name} removed`); route(true); }
+        catch (err) { ev.target.disabled = false; toast(err.message, true); }
+      });
+    });
+  }));
+}
+function staffDialog(c) {
+  const editing = !!c;
+  openModal(`
+    <h2>${editing ? 'Edit ' + esc(c.role) : 'Add staff account'}</h2>
+    <form id="c-form" novalidate>
+      <div class="form-error hidden" id="c-err" role="alert"></div>
+      ${editing ? '' : `<label class="field"><span>Role</span>
+        <select id="c-role"><option value="counselor">Counselor</option><option value="supervisor">Supervisor</option></select></label>
+        <p class="hint" id="c-role-hint" style="margin:-6px 0 14px"></p>`}
+      <label class="field"><span>Name</span><input type="text" id="c-name" value="${esc(c?.name || '')}" required></label>
+      <label class="field"><span>Email</span><input type="email" id="c-email" value="${esc(c?.email || '')}" autocomplete="off" required></label>
+      <label class="field"><span>${editing ? 'New password (leave blank to keep current)' : 'Password'}</span><input type="text" id="c-pass" autocomplete="new-password" ${editing ? '' : 'required'}></label>
+      <p class="hint">At least 6 characters. Share it with them privately.</p>
+      <div class="modal-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn btn-primary" type="submit" id="c-submit">${editing ? 'Save changes' : 'Add counselor'}</button></div>
+    </form>`, (m, close) => {
+    const roleSel = $('#c-role', m);
+    const syncRole = () => {
+      if (!roleSel) return;
+      const sup = roleSel.value === 'supervisor';
+      $('#c-submit', m).textContent = sup ? 'Add supervisor' : 'Add counselor';
+      $('#c-role-hint', m).textContent = sup
+        ? 'Supervisors can change anyone’s points, edit the menu, fulfill orders, and manage staff accounts.'
+        : 'Counselors can manage students, change student points, and place orders.';
+    };
+    if (roleSel) { roleSel.addEventListener('change', syncRole); syncRole(); }
+    $('#c-form', m).addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = $('#c-err', m), btn = $('button[type=submit]', m);
+      const show = t => { err.textContent = t; err.classList.remove('hidden'); btn.disabled = false; };
+      const name = $('#c-name', m).value.trim(), email = $('#c-email', m).value.trim(), password = $('#c-pass', m).value;
+      const role = roleSel ? roleSel.value : c.role;
+      if (!name || !email) return show('Enter a name and email.');
+      if (!/^\S+@\S+\.\S+$/.test(email)) return show('Enter a valid email address.');
+      if (!editing && !password) return show('Enter a password.');
+      if (password && password.length < 6) return show('Password must be at least 6 characters.');
+      btn.disabled = true;
+      try {
+        await callManage(editing ? { action:'update', id:c.id, name, email, password: password || undefined } : { action:'create', name, email, password, role });
+        close();
+        if (editing && c.id === me.id) { await refreshMe(); $('#who-name').textContent = me.name; }
+        toast(editing ? 'Account updated' : `${name} can now log in as a ${role}`); route(true);
+      } catch (ex) { show(ex.message); }
+    });
+  });
+}
+
+/* ----- Enroll Requests (supervisor) ----- */
+let enrollTab = 'new';
+async function renderEnrollments(page) {
+  const rows = await q(sb.from('enroll_requests').select('*').eq('handled', enrollTab === 'done').order('created_at', { ascending:false }).limit(500));
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Enroll Requests</h1><p>Messages from the Enroll Now form on the public website.</p></div></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-t="new" aria-selected="${enrollTab==='new'}">New</button>
+      <button role="tab" data-t="done" aria-selected="${enrollTab==='done'}">Handled</button>
+    </div>
+    <div class="panel" style="padding:10px 16px">
+      ${rows.length ? `<table class="data">
+        <thead><tr><th>Received</th><th>Name</th><th>Contact</th><th>Interested in</th><th></th></tr></thead>
+        <tbody>${rows.map(r => `<tr>
+          <td data-label="Received">${fmtTime(r.created_at)}</td>
+          <td data-label="Name"><b>${esc(r.first_name)} ${esc(r.last_name)}</b></td>
+          <td data-label="Contact"><a href="mailto:${esc(r.email)}">${esc(r.email)}</a>${r.phone ? `<br><a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : ''}</td>
+          <td data-label="Interested in" style="max-width:38ch;white-space:pre-wrap">${esc(r.topic)}</td>
+          <td class="no-label"><div class="actions">
+            <button class="btn btn-sm ${r.handled ? 'btn-ghost' : 'btn-primary'}" data-id="${r.id}" data-h="${r.handled ? 0 : 1}">${r.handled ? 'Move back to New' : 'Mark as handled'}</button>
+            <button class="btn btn-sm btn-ghost" data-del="${r.id}">Delete</button>
+          </div></td>
+        </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>${enrollTab === 'new' ? 'No new requests' : 'Nothing handled yet'}</b>${enrollTab === 'new' ? 'When a family fills in the Enroll Now form, it shows up here.' : 'Requests you mark as handled are kept here.'}</div>`}
+    </div>`;
+  $$('.tabs button', page).forEach(b => b.addEventListener('click', () => { enrollTab = b.dataset.t; renderEnrollments(page); }));
+  $$('button[data-h]', page).forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    const { error } = await sb.from('enroll_requests').update({ handled: b.dataset.h === '1' }).eq('id', b.dataset.id);
+    if (error) { b.disabled = false; return toast(errMsg(error), true); }
+    toast(b.dataset.h === '1' ? 'Marked as handled' : 'Moved back to New'); route(true);
+  }));
+  $$('button[data-del]', page).forEach(b => b.addEventListener('click', () => openModal(`
+    <h2>Delete this request?</h2><p>It will be removed permanently.</p>
+    <div class="modal-actions"><button class="btn" data-close>Cancel</button><button class="btn btn-red" id="do-del">Delete request</button></div>`, (m, close) => {
+      $('#do-del', m).addEventListener('click', async () => {
+        const { error } = await sb.from('enroll_requests').delete().eq('id', b.dataset.del);
+        if (error) return toast(errMsg(error), true);
+        close(); toast('Request deleted'); route(true);
+      });
+    })));
+}
+
+/* ===================== PUBLIC WEBSITE ===================== */
+const MEDIA = SUPABASE_URL + '/storage/v1/object/public/site-media/';
+const med = p => MEDIA + p;
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const bgVideo = (name) => `<video ${reduceMotion() ? '' : 'autoplay'} muted loop playsinline preload="metadata" poster="${med('video/' + name + '-poster.jpg')}" aria-hidden="true"><source src="${med('video/' + name + '.mp4')}" type="video/mp4"></video>`;
+let pubRendered = '';
+
+function showPublic(h) {
+  showOnly('public-view');
+  $('#staff-link').textContent = me ? 'Staff hub' : 'Staff login';
+  $('#staff-link').setAttribute('href', me ? '#dashboard' : '#login');
+  const pageId = (h === 'about' || h === 'leaderboard') ? h : 'site';
+  $$('.pub-nav a[data-pub]').forEach(a => a.dataset.pub === pageId ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+  if (pubRendered !== pageId) {
+    const el = $('#pub-page');
+    el.innerHTML = pageId === 'about' ? aboutHTML() : pageId === 'leaderboard' ? leaderboardHTML() : homeHTML();
+    if (pageId === 'site') wireEnroll();
+    pubRendered = pageId;
+  }
+  if (pageId === 'leaderboard') loadPublicBoard();
+  document.title = { about: 'About', leaderboard: 'Leaderboard', site: 'Home' }[pageId] + ' | BookNook4Kids';
+  if (h === 'enroll') requestAnimationFrame(() => $('#enroll').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' }));
+  else window.scrollTo(0, 0);
+}
+
+function homeHTML() {
+  return `
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <h1>Adventure Awaits at BookNook4Kids</h1>
+        <a href="#enroll" class="btn btn-big">Enroll Now</a>
+      </div>
+      <div class="hero-shelf" aria-hidden="true">
+        <b style="background:#E8202A;height:92%"></b><b style="background:#FFFEEC;height:74%"></b><b style="background:#FFCB05;height:100%"></b><b style="background:#8E2BB0;height:82%"></b><b style="background:#2E8B57;height:66%"></b><b style="background:#FFFEEC;height:96%"></b><b style="background:#E8202A;height:78%"></b><b class="lean" style="background:#FFCB05;height:88%"></b>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap prose">
+      <h2>Who We Are</h2>
+      <p class="lede">Welcome to BookNook4Kids.org, a nonprofit organization dedicated to empowering children through the joy of reading. Our mission is to create a nurturing and inclusive environment where children from minority immigrant families, low-income communities, and those on the autism spectrum can explore the magic of books. Through our international online programs, we extend this mission to orphanages and shelters worldwide, building a global community connected by stories.</p>
+      <p>At BookNook4Kids.org, we do more than share books. We collect and donate books to shelters, including those in Mongolia, where we provide resources for The Magical Land in Khuvsgul, a haven for children in need. We also offer a publishing platform for children’s books, supporting authors and illustrators while channeling 100% of the profits to children’s welfare initiatives. Together, we can make a difference, one story at a time.</p>
+    </div>
+  </section>
+
+  <section class="sec sec-tint">
+    <div class="wrap">
+      <h2>Founder's Message</h2>
+      <div class="founder-grid">
+        <div>
+          <img class="photo" src="${med('home/founder-hosannah.png')}" alt="Hosannah Y. Choi, founder of BookNook4Kids.org" loading="lazy" style="aspect-ratio:409/496">
+          <p class="founder-quote">"I hope my art and writing empowers children around the world to live happily and contribute to a better world"</p>
+        </div>
+        <div class="letter">
+          <p><b>Dear Friends,</b></p>
+          <p>Thank you for visiting BookNook4Kids.org. As the founder of this organization, I am deeply committed to creating a brighter future for children everywhere. My journey as a recipient of the President’s Volunteer Service Lifetime Achievement Award and other recognitions has been shaped by a lifelong dedication to children’s welfare and rights.</p>
+          <p>As a children’s book author and illustrator, I have used storytelling to advocate for justice and equity. Inspired by Prevent Child Abuse America, I launched a local campaign to raise awareness about child abuse, furthering my commitment to protecting the most vulnerable among us. My latest book, based on the United Nations Convention on the Rights of the Child (CRC), helps young readers understand and champion their rights.</p>
+          <p>Beyond writing, I contribute as a journalist and lead illustrator for the STEM Journal for Kids and design educational game graphics to make learning engaging for children. Through BookNook4Kids.org, I merge my creative talents and passion for advocacy, empowering children through literacy and community support. We are also dedicated to publishing educational books for kids and opening opportunities for aspiring children’s book writers.</p>
+          <p>My hope is that this organization will inspire others to stand for children’s rights. I am committed to growing BookNook4Kids.org for children locally and globally, ensuring its mission reaches more young lives in need. Together, we can create a world where every child is heard, valued, and supported.</p>
+          <p class="sign">With heartfelt gratitude,<br>Hosannah Y. Choi<br><span style="font-family:var(--sans);font-weight:500">Founder, BookNook4Kids.org</span></p>
+        </div>
+      </div>
+      <div class="media-row">
+        <video controls playsinline preload="metadata" poster="${med('video/founder-poster.jpg')}"><source src="${med('video/founder.mp4')}" type="video/mp4">Your browser can't play this video.</video>
+        <img src="${med('home/founder-book-writer-1.jpg')}" alt="Book writer at work" loading="lazy">
+        <img class="contain" src="${med('home/austin-message.jpg')}" alt="Austin's message" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <h2>Published Books by BookNook4Kids.org</h2>
+      <div class="books">
+        <article class="book">
+          <div class="book-imgs">
+            <img src="${med('home/ari-and-burt-cover.jpg')}" alt="Ari and Burt: Children's Justice! cover" loading="lazy">
+            <img src="${med('home/ari-and-burt-pages.jpg')}" alt="Pages from Ari and Burt: Children's Justice!" loading="lazy">
+          </div>
+          <div class="book-body">
+            <h3>Ari and Burt: Children's Justice!</h3>
+            <p class="by">Illustrated and written by Hosannah Y. Choi</p>
+            <p>This book is dedicated to my friend Lkhamaa, who has persisted through times of injustice. -Hosannah</p>
+          </div>
+        </article>
+        <article class="book">
+          <div class="book-imgs"><img src="${med('home/mango-street-journal.png')}" alt="The Mango Street Research Journal website" loading="lazy"></div>
+          <div class="book-body">
+            <h3>The Mango Street Research Journal: STEM for Kids</h3>
+            <p>Hi, we are The Mango Street Journal.</p>
+            <p>Located in Seattle, we are a group of high schoolers who are passionate about science and math. We want to spread information and raise awareness among children about current science issues and events. We hope that by raising awareness, more and more kids will be interested in STEM.</p>
+            <p><a href="https://www.mangostem.org/" target="_blank" rel="noopener">https://www.mangostem.org/</a></p>
+          </div>
+        </article>
+        <article class="book">
+          <div class="book-imgs"><img src="${med('home/milo-piano-cover.png')}" alt="Milo's Piano Adventures for Kids cover" loading="lazy"></div>
+          <div class="book-body">
+            <h3>Milo's Piano Adventures for Kids</h3>
+            <p class="by">Written &amp; Illustrated by Junrou Tan</p>
+            <p>"This book is my gift to all children, an invitation to explore the magical world of music. I dedicate it to every child with a dream of learning and playing. Now, let's meet Milo!" -Junrou Tan</p>
+          </div>
+        </article>
+        <article class="book">
+          <div class="book-imgs">
+            <img src="${med('home/newton-math-cover.jpg')}" alt="Newton Math Core cover" loading="lazy">
+            <img src="${med('home/newton-math-core.png')}" alt="Newton Math Core: STEM for Kids" loading="lazy">
+          </div>
+          <div class="book-body">
+            <h3>Newton Math Core: STEM for Kids</h3>
+            <p class="by">Northwest InnoLab Youth Center · Authors: Alvin Sung, Ashley Sung, Hosannah Choi, Henry Yang</p>
+            <p>Newton Math Core is founded by a group of driven highschool students from Seattle, WA. We all have a growing passion for education and STEM, especially volunteering for our community. We created this second edition textbook in hopes to inspire a love for math in kids everywhere, especially those with mental disabilities.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-tint">
+    <div class="wrap">
+      <h2>What parents and kids say</h2>
+      <p class="lede" style="margin-bottom:26px">Hear from Families Who Have Experienced the Adventure of the BookNook4Kids.org</p>
+      <div class="quotes">
+        <div>
+          <figure class="quote big" style="margin:0">
+            <blockquote>"Before we found BookNook4Kids, my daughter Uyangatuguldur, who is on the autism spectrum, didn’t know the alphabet and couldn’t sit still for reading time. Now, at 16, she not only understands short stories but also looks forward to every session with excitement. The patient coaches and the warm, supportive environment have truly changed her life. I’m especially grateful to Hosannah, the founder, for creating such an incredible program that meets kids where they are and helps them thrive."</blockquote>
+            <cite>– Uyangatuguldur's Mom</cite>
+          </figure>
+          <figure class="quote" style="margin:18px 0 0">
+            <blockquote>"I was amazed by the progress my daughter made in just a few months with BookNook4Kids. The program is fun, engaging, and perfectly tailored to young readers. She’s now reading above grade level!"</blockquote>
+            <cite>– James L., Parent</cite>
+          </figure>
+          <figure class="quote" style="margin:18px 0 0">
+            <blockquote>"BookNook4Kids has been a lifesaver for our family! My son struggled with reading, but the interactive activities and personalized support have boosted his confidence and skills. He’s now excited to pick up a book!"</blockquote>
+            <cite>– Sarah T., Parent</cite>
+          </figure>
+        </div>
+        <img class="photo" src="${med('about/our-story-alison-reading.jpg')}" alt="A BookNook4Kids book reading" loading="lazy" style="aspect-ratio:1440/1080">
+      </div>
+    </div>
+  </section>
+
+  <section class="sec watch">
+    <div class="wrap">
+      <h2>Watch BookNook4Kids in action</h2>
+      <video controls playsinline preload="metadata" poster="${med('video/hero-poster.jpg')}"><source src="${med('video/hero.mp4')}" type="video/mp4">Your browser can't play this video.</video>
+    </div>
+  </section>
+
+  <section class="vid-band sec" id="enroll">
+    ${bgVideo('enroll')}
+    <div class="wrap enroll-grid">
+      <div>
+        <h2>Ready to Start The Book Reading Adventure with our BookNook4Kids Coach?</h2>
+        <p class="lede">Contact us for more information and book your spot</p>
+      </div>
+      <div class="enroll-card">
+        <form id="enroll-form" novalidate>
+          <div class="form-error hidden" id="enroll-err" role="alert"></div>
+          <div class="grid-2">
+            <label class="field"><span>First Name <span class="req">*</span></span><input type="text" id="en-first" autocomplete="given-name" maxlength="100" required></label>
+            <label class="field"><span>Last name <span class="req">*</span></span><input type="text" id="en-last" autocomplete="family-name" maxlength="100" required></label>
+          </div>
+          <label class="field"><span>Email <span class="req">*</span></span><input type="email" id="en-email" autocomplete="email" maxlength="200" required></label>
+          <label class="field"><span>Telephone</span><input type="text" id="en-phone" autocomplete="tel" inputmode="tel" maxlength="40"></label>
+          <label class="field"><span>What Topic Are You Interested In? <span class="req">*</span></span><textarea id="en-topic" maxlength="2000" required></textarea></label>
+          <button type="submit" class="btn btn-red btn-big" style="width:100%">Submit</button>
+        </form>
+      </div>
+    </div>
+  </section>`;
+}
+
+function leaderboardHTML() {
+  return `
+  <section class="sec">
+    <div class="wrap">
+      <h1 style="font-size:clamp(2.1rem,5vw,3.4rem);margin-bottom:10px">Student leaderboard</h1>
+      <p class="lede" style="margin-bottom:24px">Our top readers, ranked by the points they've earned in the BookNook4Kids Cafe.</p>
+      <div class="board-layout">
+        <div class="panel board" id="pub-board"><div class="loading">Loading leaderboard…</div></div>
+        <div id="pub-menu"><div class="panel loading">Loading menu…</div></div>
+      </div>
+    </div>
+  </section>`;
+}
+
+async function loadPublicBoard() {
+  const box = $('#pub-board'); if (!box) return;
+  sb.from('menu_items').select('name,description,image_url,cost').order('sort_order').order('created_at').then(({ data: items, error: mErr }) => {
+    const mBox = $('#pub-menu'); if (!mBox) return;
+    mBox.innerHTML = mErr ? '' : miniMenu(items || []);
+  });
+  const { data, error } = await sb.rpc('public_leaderboard', { p_limit: 10 });
+  if (error) { box.innerHTML = `<div class="empty"><b>The leaderboard couldn't load</b>Refresh the page to try again.</div>`; return; }
+  box.innerHTML = data.length ? boardList(data, data) : `<div class="empty"><b>The leaderboard is starting soon</b>Students will appear here as they earn points.</div>`;
+}
+
+function wireEnroll() {
+  const form = $('#enroll-form');
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('#enroll-err'), btn = $('button[type=submit]', form);
+    const show = t => { err.textContent = t; err.classList.remove('hidden'); btn.disabled = false; };
+    const v = id => $(id).value.trim();
+    const row = { first_name: v('#en-first'), last_name: v('#en-last'), email: v('#en-email'), phone: v('#en-phone') || null, topic: v('#en-topic') };
+    if (!row.first_name || !row.last_name || !row.email || !row.topic) return show('Fill in every field marked with *.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row.email)) return show('Enter a valid email address.');
+    err.classList.add('hidden'); btn.disabled = true;
+    const { error } = await sb.from('enroll_requests').insert(row);
+    if (error) return show('Your message couldn’t be sent. Please try again, or email contact@booknook4kids.org.');
+    form.outerHTML = `<p class="thanks" role="status">Thanks, we received your submission.</p>`;
+  });
+}
+
+function aboutHTML() {
+  const team = [
+    ['team/hosannah-choi.jpg', 'Hosannah Choi', 'Head Coach & Founder'],
+    ['team/sanghyuk-lee.jpg', 'Sanghyuk Lee', "Children's Program Head Coordinator"],
+    ['team/junrou-tan.jpg', 'Junrou Tan', 'Pre School Reading Coach & Author'],
+    ['team/seongmin-noh.jpg', 'Seongmin Noh', 'Coach'],
+    ['team/austin-lee.jpg', 'Austin Lee', 'Coach'],
+    ['team/coach-6.jpg', 'Sanghyuk Lee', 'Coach'],
+  ];
+  const values = [
+    ['Inclusivity', 'We embrace children of all abilities and backgrounds, ensuring that every child feels welcome, valued, and supported in their learning journey.'],
+    ['Empowerment', 'We believe in helping children build confidence and independence by giving them the tools and encouragement they need to succeed.'],
+    ['Creativity', 'We foster a love for reading through engaging, imaginative, and fun activities that ignite curiosity and inspire young minds.'],
+    ['Compassion', 'We approach every child and family with patience, understanding, and a heartfelt commitment to their growth and success.'],
+    ['Community', 'We are more than a program—we are a supportive community of children, parents, and coaches working together to create a brighter future through the power of literacy.'],
+  ];
+  return `
+  <section class="sec">
+    <div class="wrap two">
+      <div class="prose">
+        <h1 style="font-size:clamp(2.1rem,5vw,3.4rem);margin-bottom:6px">About BookNook4Kids.org</h1>
+        <p class="lede" style="font-family:var(--serif);font-weight:700;margin-bottom:22px">Our Mission and Values</p>
+        <h3 style="margin-bottom:8px">Our Mission Statement</h3>
+        <p>At BookNook4Kids.org, our mission is to foster a love for reading and support children’s welfare globally. We strive to:</p>
+        <ul class="mission-list">
+          <li>Provide access to books and literacy programs for minority immigrant families, low-income children, and youth with autism.</li>
+          <li>Expand opportunities for reading and learning to orphanages and shelters worldwide through our international online network.</li>
+          <li>Collect and donate books to shelters in need, such as The Magical Land in Khuvsgul, Mongolia.</li>
+          <li>Promote creativity and storytelling by publishing and selling children’s books, with all profits benefiting children in need.</li>
+        </ul>
+        <p>Through these efforts, we aim to nurture the next generation of readers and leaders, transforming lives through the power of stories.</p>
+      </div>
+      <img class="photo" src="${med('about/our-mission.jpg')}" alt="A BookNook4Kids reading session" style="aspect-ratio:1206/680">
+    </div>
+  </section>
+
+  <section class="sec sec-tint">
+    <div class="wrap two">
+      <img class="photo" src="${med('about/our-story-alison-reading.jpg')}" alt="Alison book reading" loading="lazy" style="aspect-ratio:1440/1080">
+      <div class="prose">
+        <h2>Our Story</h2>
+        <p>At BookNook4Kids.org, we believe that every child deserves the joy of reading, regardless of their background or learning challenges. Our journey began with a simple but powerful mission: to create a space where children of all abilities could develop a love for books and unlock their full potential.</p>
+        <p>Founded by Hosannah, a passionate advocate for literacy and inclusion, BookNook4Kids started as a small community program aimed at helping kids struggling with reading. Over time, we’ve grown into a supportive, nurturing environment where children not only learn to read but also build confidence, creativity, and a lifelong passion for learning.</p>
+        <p>From teaching the basics of the alphabet to helping kids understand stories and express their thoughts, our team of dedicated coaches tailors every session to meet each child's unique needs. Whether it's a third grader learning to love books for the first time or a teenager like Uyangatuguldur, who overcame significant challenges to enjoy reading, we are here to make a difference—one story at a time.</p>
+        <p>Our success comes from the hearts of the children we serve, the trust of their families, and the commitment of our incredible team. Together, we’re building a community where every child can dream, grow, and shine through the power of reading.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="prose">
+        <h2>Our Mission</h2>
+        <p>At BookNook4Kids.org, our mission is to empower children of all abilities to discover the joy of reading. We are dedicated to creating a nurturing and inclusive environment where young minds can build confidence, develop essential literacy skills, and unlock their full potential.</p>
+        <p>Through personalized support, engaging programs, and a passionate team of coaches, we strive to inspire a lifelong love of learning and ensure that every child, regardless of their challenges, has the opportunity to thrive.</p>
+        <p class="founder-quote" style="max-width:40ch">Our goal is simple: to open the world of stories, imagination, and knowledge to every child, one page at a time.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-tint">
+    <div class="wrap">
+      <h2>Our Values</h2>
+      <p class="lede" style="margin-bottom:24px">At BookNook4Kids.org, our work is guided by a set of core values that shape everything we do. These values reflect our commitment to children, families, and the transformative power of literacy.</p>
+      <ol class="values">${values.map((v, i) => `<li><div class="num">0${i + 1}</div><h3>${v[0]}</h3><p>${v[1]}</p></li>`).join('')}</ol>
+    </div>
+  </section>
+
+  <section class="vid-band" style="padding:clamp(56px,9vw,110px) 0">
+    ${bgVideo('team')}
+    <div class="wrap">
+      <h2 style="color:#fff;font-size:clamp(1.9rem,4.4vw,3rem)">Meet Our Dedicated Team</h2>
+      <p class="lede" style="color:#E8F4FD;margin-top:10px">Dedicated Coaches Inspiring a Lifelong Love for Reading</p>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="wrap team">
+      ${team.map(t => `<div class="member"><img src="${med(t[0])}" alt="${esc(t[1])}" loading="lazy"><h3>${esc(t[1])}</h3><p>${esc(t[2])}</p></div>`).join('')}
+    </div>
+  </section>`;
+}
+
+/* ----- Orders to Fulfill (supervisor) ----- */
+let fulfillTab = 'pending';
+async function renderFulfill(page) {
+  const orders = await q(sb.from('orders').select('*').eq('status', fulfillTab).order('created_at', { ascending: fulfillTab === 'pending' }).limit(500));
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Orders to Fulfill</h1><p>Hand out each item, then mark the order as Given.</p></div></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-t="pending" aria-selected="${fulfillTab==='pending'}">Waiting</button>
+      <button role="tab" data-t="given" aria-selected="${fulfillTab==='given'}">Given</button>
+    </div>
+    <div class="panel" style="padding:10px 16px">
+      ${orders.length ? `<table class="data">
+        <thead><tr><th>Ordered at</th><th>For</th><th>Item</th><th>Ordered by</th><th></th></tr></thead>
+        <tbody>${orders.map(o => `<tr>
+          <td data-label="Ordered at">${fmtTime(o.created_at)}</td>
+          <td data-label="For"><b>${esc(o.buyer_name)}</b> ${o.buyer_type === 'student' ? '<span class="tag">Student</span>' : '<span class="tag grape">Staff</span>'}</td>
+          <td data-label="Item">${esc(o.item_name)}</td>
+          <td data-label="Ordered by">${esc(o.ordered_by_name)}</td>
+          <td class="no-label"><div class="actions">${o.status === 'pending'
+            ? `<button class="btn btn-sm btn-primary" data-id="${o.id}" data-given="1">Mark as Given</button>`
+            : `<span class="hint">Given by ${esc(o.given_by_name || '')}, ${fmtTime(o.given_at)}</span> <button class="btn btn-sm btn-ghost" data-id="${o.id}" data-given="0">Undo</button>`}</div></td>
+        </tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>${fulfillTab === 'pending' ? 'All caught up' : 'Nothing given yet'}</b>${fulfillTab === 'pending' ? 'New orders will appear here as soon as they’re placed.' : 'Orders you mark as Given will be listed here.'}</div>`}
+    </div>`;
+  $$('.tabs button', page).forEach(b => b.addEventListener('click', () => { fulfillTab = b.dataset.t; renderFulfill(page); }));
+  $$('button[data-given]', page).forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    const { error } = await sb.rpc('set_order_status', { p_order_id: b.dataset.id, p_given: b.dataset.given === '1' });
+    if (error) { b.disabled = false; return toast(errMsg(error), true); }
+    toast(b.dataset.given === '1' ? 'Marked as Given' : 'Moved back to Waiting'); route(true);
+  }));
+}
+
+/* ---------------- start ---------------- */
+drawShelf();
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT' && me) { me = null; stopRealtime(); if (!PUBLIC.includes(location.hash.slice(1))) goTo('login'); }
+});
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { me = await loadMe(); if (!me) await sb.auth.signOut(); }
+  navigate();
+})();
+</script>
+</body>
+</html>
