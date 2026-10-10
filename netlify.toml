@@ -1,0 +1,6 @@
+# On every deploy, copy the site's .html file to dist/index.html,
+# so a file named "index (9).html" (or anything else) still becomes the homepage.
+# Keep only ONE .html file in the repo, or the first one alphabetically is used.
+[build]
+  command = "mkdir -p dist && f=$(ls *.html | head -n 1) && cp \"$f\" dist/index.html && echo \"Published $f as index.html\""
+  publish = "dist"
