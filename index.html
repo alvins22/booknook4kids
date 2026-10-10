@@ -95,7 +95,7 @@ textarea{min-height:90px;resize:vertical}
 header.top{background:var(--paper);position:sticky;top:0;z-index:20;border-bottom:2px solid var(--line)}
 .top-inner{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px}
 .nav-row{max-width:1180px;margin:0 auto;padding:0 14px 10px}
-nav.main{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.main{display:flex;gap:2px;flex-wrap:wrap}
 nav.main a{text-decoration:none;color:var(--ink);font-weight:500;font-size:.88rem;padding:8px 9px;border-radius:999px;white-space:nowrap}
 nav.main a:hover{background:rgba(30,36,64,.06)}
 nav.main a[aria-current=page]{background:var(--ink);color:var(--paper)}
@@ -138,6 +138,23 @@ main#page{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
 .quick a.q-grape{border-left:8px solid var(--grape)}
 .quick a.q-green{border-left:8px solid var(--green)}
 .quick a.q-sun{border-left:8px solid var(--sun)}
+
+/* time clock */
+.clock-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:22px;align-items:start}
+.clock-card{background:var(--card);border:3px solid var(--ink);border-radius:var(--r-lg);padding:24px}
+.clock-card.is-in{background:var(--green-tint);border-color:var(--green)}
+.clock-state{font-family:var(--serif);font-weight:800;font-size:1.3rem;margin-bottom:12px}
+.clock-elapsed{font-family:var(--serif);font-weight:800;font-size:clamp(2.6rem,8vw,3.6rem);line-height:1}
+.clock-since{color:var(--ink-2);margin:6px 0 16px}
+.clock-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 20px}
+.clock-meta dt{font-weight:600;font-size:.85rem;color:var(--ink-2)}
+.clock-meta dd{margin:0;overflow-wrap:anywhere}
+.clock-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 16px;border-radius:var(--r);border:2px solid var(--line);background:#fff;text-decoration:none;color:var(--ink)}
+.clock-strip b{display:block;font-family:var(--serif)}
+.clock-strip span:first-child{font-size:.88rem;color:var(--ink-2)}
+.clock-strip span:first-child b{color:var(--ink);font-size:1rem}
+.clock-strip.is-in{border-color:var(--green);background:var(--green-tint)}
+@media (max-width:860px){ .clock-grid{grid-template-columns:1fr} }
 
 /* leaderboard */
 .board{margin-top:22px}
@@ -626,12 +643,14 @@ async function navigate() {
 /* ---------------- nav & routing ---------------- */
 const ROUTES = [
   { id:'dashboard', label:'Dashboard',          render: renderHome },
+  { id:'clock',     label:'Check In/Out',       render: renderClock },
   { id:'board',     label:'Leaderboard',        render: renderLeaderboard },
   { id:'students',  label:'Students',           render: renderStudents },
   { id:'menu',      label:'Menu',               render: renderMenu },
   { id:'activity',  label:'Activity Log',       render: renderActivity },
   { id:'orders',    label:'Order History',      render: renderOrderHistory },
   { id:'booktalk',  label:'Book Talk',          render: renderBookTalk },
+  { id:'hours',     label:'Volunteer Hours',    render: renderHours, sup:true },
   { id:'staff',     label:'Manage Staff',       render: renderCounselors, sup:true },
   { id:'fulfill',   label:'Orders to Fulfill',  render: renderFulfill, sup:true },
   { id:'enrollments',label:'Enroll Requests',   render: renderEnrollments, sup:true },
@@ -655,6 +674,7 @@ async function route(soft = false) {
   if (!r || (r.sup && me.role !== 'supervisor')) { r = ROUTES[0]; id = 'dashboard'; }
   const changed = id !== currentRoute;
   currentRoute = id;
+  clearInterval(clockTimer);
   $$('#main-nav a').forEach(a => a.dataset.id === id ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
   document.title = r.label + ' · BookNook4Kids Cafe';
   const page = $('#page');
@@ -669,7 +689,7 @@ let channel = null, rtTimer = null;
 function startRealtime() {
   stopRealtime();
   channel = sb.channel('booknook-live');
-  ['profiles','students','menu_items','orders','point_logs','settings'].forEach(t =>
+  ['profiles','students','menu_items','orders','point_logs','settings','volunteer_sessions','enroll_requests'].forEach(t =>
     channel.on('postgres_changes', { event:'*', schema:'public', table:t }, () => {
       clearTimeout(rtTimer);
       rtTimer = setTimeout(async () => {
@@ -731,10 +751,12 @@ function pointsDialog(kind, target) {
 
 /* ----- Home ----- */
 async function renderHome(page) {
-  const [logs, pending] = await Promise.all([
+  const [logs, pending, mySess] = await Promise.all([
     q(sb.from('point_logs').select('*').order('created_at', { ascending:false }).limit(6)),
     me.role === 'supervisor' ? q(sb.from('orders').select('id', { count:'exact', head:false }).eq('status','pending')) : Promise.resolve(null),
+    q(sb.rpc('my_sessions')),
   ]);
+  const openSess = mySess.find(s => s.status === 'open');
   const hour = new Date().getHours();
   const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   page.innerHTML = `
@@ -748,6 +770,10 @@ async function renderHome(page) {
           </div>
           <div class="wallet-balance">${fmtPts(me.points)}<small>points</small></div>
         </div>
+        <a href="#clock" class="clock-strip ${openSess ? 'is-in' : ''}">
+          <span><b>${openSess ? 'You\'re checked in' : 'Volunteering today?'}</b>${openSess ? `Since ${fmtClock(openSess.check_in_at)} at ${esc(openSess.location)}` : 'Check in when you start'}</span>
+          <span class="btn btn-sm ${openSess ? 'btn-red' : 'btn-primary'}">${openSess ? 'Check out' : 'Check in'}</span>
+        </a>
         <div class="quick">
           <a href="#menu" class="q-red"><b>Order from the menu</b><span>For yourself or a student</span></a>
           <a href="#students" class="q-green"><b>Give student points</b><span>Add or deduct points</span></a>
@@ -1628,6 +1654,202 @@ function aboutHTML() {
       ${team.map(t => `<div class="member"><img src="${med(t[0])}" alt="${esc(t[1])}" loading="lazy"><h3>${esc(t[1])}</h3><p>${esc(t[2])}</p></div>`).join('')}
     </div>
   </section>`;
+}
+
+/* ----- Volunteer time clock ----- */
+let clockTimer = null;
+const fmtDay = t => new Date(t).toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+const fmtClock = t => new Date(t).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+const fmtDur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`; };
+const fmtHrs = h => (h == null ? '—' : Number(h).toFixed(1).replace(/\.0$/, '') + (Number(h) === 1 ? ' hr' : ' hrs'));
+const STATUS_TAG = {
+  open: '<span class="tag sun">Checked in</span>',
+  pending: '<span class="tag">Waiting for verification</span>',
+  verified: '<span class="tag green">Verified</span>',
+  rejected: '<span class="tag red">Not approved</span>',
+};
+function startTicker(el, since) {
+  clearInterval(clockTimer);
+  const tick = () => { const n = document.getElementById(el); if (!n) return clearInterval(clockTimer); n.textContent = fmtDur(Date.now() - new Date(since)); };
+  tick(); clockTimer = setInterval(tick, 30000);
+}
+
+async function renderClock(page) {
+  const mine = await q(sb.rpc('my_sessions'));
+  const open = mine.find(s => s.status === 'open');
+  const past = mine.filter(s => s.status !== 'open');
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Volunteer check-in</h1><p>Check in when you start volunteering and check out when you finish. Abigail or David will verify your hours.</p></div></div>
+    <div class="clock-grid">
+      <section class="clock-card ${open ? 'is-in' : ''}">
+        ${open ? `
+          <div class="clock-state">You're checked in</div>
+          <div class="clock-elapsed" id="clock-elapsed" aria-live="off"></div>
+          <p class="clock-since">Since ${fmtClock(open.check_in_at)}, ${fmtDay(open.check_in_at)}</p>
+          <dl class="clock-meta"><dt>Where</dt><dd>${esc(open.location)}</dd><dt>Doing</dt><dd>${esc(open.activity)}</dd></dl>
+          <button class="btn btn-red btn-big" id="do-checkout" style="width:100%">Check out</button>`
+        : `
+          <div class="clock-state">Not checked in</div>
+          <form id="checkin-form" novalidate>
+            <div class="form-error hidden" id="ci-err" role="alert"></div>
+            <label class="field"><span>Where are you volunteering?</span><input type="text" id="ci-where" maxlength="300" placeholder="e.g. BookNook4Kids Cafe, Bellevue" required></label>
+            <label class="field"><span>What are you doing this session?</span><textarea id="ci-what" maxlength="1000" placeholder="e.g. Reading with the 3rd graders, running the cafe" required></textarea></label>
+            <button class="btn btn-primary btn-big" type="submit" style="width:100%">Check in</button>
+          </form>`}
+      </section>
+      <section class="panel">
+        <h2 style="margin-bottom:8px">My sessions</h2>
+        ${past.length ? `<table class="data">
+          <thead><tr><th>Date</th><th>Time</th><th>Where</th><th>Status</th></tr></thead>
+          <tbody>${past.map(s => `<tr>
+            <td data-label="Date">${fmtDay(s.check_in_at)}</td>
+            <td data-label="Time">${fmtClock(s.check_in_at)} – ${s.check_out_at ? fmtClock(s.check_out_at) : '…'}</td>
+            <td data-label="Where"><div>${esc(s.location)}<div class="hint">${esc(s.activity)}</div></div></td>
+            <td data-label="Status">${STATUS_TAG[s.status]}</td>
+          </tr>`).join('')}</tbody></table>`
+        : `<div class="empty"><b>No sessions yet</b>Your finished sessions will show up here.</div>`}
+      </section>
+    </div>`;
+  if (open) {
+    startTicker('clock-elapsed', open.check_in_at);
+    $('#do-checkout').addEventListener('click', async ev => {
+      ev.target.disabled = true;
+      const { error } = await sb.rpc('check_out');
+      if (error) { ev.target.disabled = false; return toast(errMsg(error), true); }
+      toast('Checked out. Abigail or David will verify your hours.'); route(true);
+    });
+  } else {
+    $('#checkin-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = $('#ci-err'), btn = $('#checkin-form button[type=submit]');
+      const show = t => { err.textContent = t; err.classList.remove('hidden'); btn.disabled = false; };
+      const where = $('#ci-where').value.trim(), what = $('#ci-what').value.trim();
+      if (!where) return show('Say where you are volunteering.');
+      if (!what) return show('Say what you are doing this session.');
+      btn.disabled = true;
+      const { error } = await sb.rpc('check_in', { p_location: where, p_activity: what });
+      if (error) return show(errMsg(error));
+      toast('Checked in. Remember to check out when you finish.'); route(true);
+    });
+  }
+}
+
+/* ----- Volunteer Hours (supervisor) ----- */
+let hoursTab = 'verify', hoursRange = 'all';
+async function renderHours(page) {
+  const rows = await q(sb.from('volunteer_sessions').select('*').order('check_in_at', { ascending:false }).limit(2000));
+  const pending = rows.filter(s => s.status === 'pending'), open = rows.filter(s => s.status === 'open');
+  const now = new Date();
+  const inRange = s => {
+    if (hoursRange === 'all') return true;
+    const d = new Date(s.check_in_at);
+    const ym = hoursRange === 'month' ? [now.getFullYear(), now.getMonth()] : [new Date(now.getFullYear(), now.getMonth() - 1).getFullYear(), new Date(now.getFullYear(), now.getMonth() - 1).getMonth()];
+    return d.getFullYear() === ym[0] && d.getMonth() === ym[1];
+  };
+  const tab = (id, label) => `<button role="tab" data-t="${id}" aria-selected="${hoursTab === id}">${label}</button>`;
+  let body = '';
+  if (hoursTab === 'verify') {
+    body = pending.length ? `<table class="data">
+      <thead><tr><th>Volunteer</th><th>Date &amp; time</th><th>Actual time</th><th>Hours</th><th>Where / doing</th><th></th></tr></thead>
+      <tbody>${pending.map(s => `<tr>
+        <td data-label="Volunteer"><b>${esc(s.volunteer_name)}</b></td>
+        <td data-label="Date &amp; time"><div>${fmtDay(s.check_in_at)}<div class="hint">${fmtClock(s.check_in_at)} – ${fmtClock(s.check_out_at)}${s.checked_out_by_name ? ` (checked out by ${esc(s.checked_out_by_name)})` : ''}</div></div></td>
+        <td data-label="Actual time">${fmtDur(new Date(s.check_out_at) - new Date(s.check_in_at))}</td>
+        <td data-label="Hours"><span class="amt plus" style="color:var(--ink)">${fmtHrs(s.hours)}</span></td>
+        <td data-label="Where / doing"><div>${esc(s.location)}<div class="hint">${esc(s.activity)}</div></div></td>
+        <td class="no-label"><div class="actions">
+          <button class="btn btn-sm btn-primary" data-verify="${s.id}">Verify</button>
+          <button class="btn btn-sm" data-edit="${s.id}">Change hours</button>
+          <button class="btn btn-sm btn-ghost" data-reject="${s.id}">Reject</button>
+        </div></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>Nothing to verify</b>Finished sessions show up here after a volunteer checks out.</div>`;
+  } else if (hoursTab === 'now') {
+    body = open.length ? `<table class="data">
+      <thead><tr><th>Volunteer</th><th>Checked in</th><th>So far</th><th>Where / doing</th><th></th></tr></thead>
+      <tbody>${open.map(s => `<tr>
+        <td data-label="Volunteer"><b>${esc(s.volunteer_name)}</b></td>
+        <td data-label="Checked in"><div>${fmtClock(s.check_in_at)}<div class="hint">${fmtDay(s.check_in_at)}</div></div></td>
+        <td data-label="So far">${fmtDur(Date.now() - new Date(s.check_in_at))}</td>
+        <td data-label="Where / doing"><div>${esc(s.location)}<div class="hint">${esc(s.activity)}</div></div></td>
+        <td class="no-label"><div class="actions"><button class="btn btn-sm" data-endsess="${s.id}">Check out for them</button></div></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>No one is checked in</b>Volunteers appear here while they're checked in.</div>`;
+  } else if (hoursTab === 'totals') {
+    const by = new Map();
+    rows.filter(inRange).forEach(s => {
+      const k = s.profile_id || s.volunteer_name;
+      const t = by.get(k) || { name: s.volunteer_name, verified: 0, pending: 0, sessions: 0 };
+      if (s.status === 'verified') { t.verified += Number(s.hours || 0); t.sessions++; }
+      if (s.status === 'pending') t.pending += Number(s.hours || 0);
+      by.set(k, t);
+    });
+    const list = [...by.values()].sort((a, b) => b.verified - a.verified || a.name.localeCompare(b.name));
+    const sum = list.reduce((a, t) => a + t.verified, 0);
+    body = `<div class="toolbar"><label style="display:flex;gap:10px;align-items:center"><b style="font-size:.9rem">Show</b>
+        <select id="hours-range" style="max-width:200px"><option value="all">All time</option><option value="month">This month</option><option value="last">Last month</option></select></label>
+        <span class="hint">Total verified: <b>${fmtHrs(sum)}</b></span></div>
+      ${list.length ? `<table class="data">
+        <thead><tr><th>Volunteer</th><th>Verified hours</th><th>Waiting to verify</th><th>Verified sessions</th></tr></thead>
+        <tbody>${list.map(t => `<tr>
+          <td data-label="Volunteer"><b>${esc(t.name)}</b></td>
+          <td data-label="Verified hours"><span class="amt" style="font-size:1.1rem">${fmtHrs(t.verified)}</span></td>
+          <td data-label="Waiting to verify">${t.pending ? fmtHrs(t.pending) : '<span class="hint">None</span>'}</td>
+          <td data-label="Verified sessions">${t.sessions}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>No hours yet</b>Verified hours will add up here.</div>`}`;
+  } else {
+    const done = rows.filter(s => s.status === 'verified' || s.status === 'rejected');
+    body = done.length ? `<table class="data">
+      <thead><tr><th>Volunteer</th><th>Date &amp; time</th><th>Hours</th><th>Where / doing</th><th>Status</th><th></th></tr></thead>
+      <tbody>${done.map(s => `<tr>
+        <td data-label="Volunteer"><b>${esc(s.volunteer_name)}</b></td>
+        <td data-label="Date &amp; time"><div>${fmtDay(s.check_in_at)}<div class="hint">${fmtClock(s.check_in_at)} – ${fmtClock(s.check_out_at)}</div></div></td>
+        <td data-label="Hours">${fmtHrs(s.hours)}</td>
+        <td data-label="Where / doing"><div>${esc(s.location)}<div class="hint">${esc(s.activity)}</div></div></td>
+        <td data-label="Status"><div>${STATUS_TAG[s.status]}<div class="hint">by ${esc(s.verified_by_name || '')}</div></div></td>
+        <td class="no-label"><div class="actions">${s.status === 'verified'
+          ? `<button class="btn btn-sm btn-ghost" data-reject="${s.id}">Reject</button>`
+          : `<button class="btn btn-sm btn-ghost" data-verify="${s.id}">Verify</button>`}
+          <button class="btn btn-sm btn-ghost" data-edit="${s.id}">Change hours</button></div></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty"><b>No history yet</b>Verified and rejected sessions are kept here.</div>`;
+  }
+  page.innerHTML = `
+    <div class="page-head"><div><h1>Volunteer Hours</h1><p>Verify each session after a volunteer checks out. Hours are rounded up to the nearest half hour. Only supervisors can see hours.</p></div></div>
+    <div class="tabs" role="tablist">
+      ${tab('verify', `To verify (${pending.length})`)}${tab('now', `Checked in now (${open.length})`)}${tab('totals', 'Total hours')}${tab('history', 'History')}
+    </div>
+    <div class="panel" style="padding:12px 16px">${body}</div>`;
+  $$('.tabs button', page).forEach(b => b.addEventListener('click', () => { hoursTab = b.dataset.t; renderHours(page); }));
+  const rs = $('#hours-range'); if (rs) { rs.value = hoursRange; rs.addEventListener('change', e => { hoursRange = e.target.value; renderHours(page); }); }
+  const find = id => rows.find(s => s.id === id);
+  const verify = async (id, approve, hours = null) => {
+    const { error } = await sb.rpc('verify_session', { p_id: id, p_approve: approve, p_hours: hours });
+    if (error) return toast(errMsg(error), true);
+    toast(approve ? 'Hours verified' : 'Session rejected'); route(true);
+  };
+  $$('[data-verify]', page).forEach(b => b.addEventListener('click', () => { b.disabled = true; verify(b.dataset.verify, true); }));
+  $$('[data-reject]', page).forEach(b => b.addEventListener('click', () => { const s = find(b.dataset.reject); openModal(`
+    <h2>Reject this session?</h2><p>${esc(s.volunteer_name)}, ${fmtDay(s.check_in_at)}. The hours won't count toward their total. You can verify it later from History.</p>
+    <div class="modal-actions"><button class="btn" data-close>Cancel</button><button class="btn btn-red" id="do-reject">Reject session</button></div>`, (m, close) => {
+      $('#do-reject', m).addEventListener('click', () => { close(); verify(s.id, false); }); }); }));
+  $$('[data-edit]', page).forEach(b => b.addEventListener('click', () => { const s = find(b.dataset.edit); openModal(`
+    <h2>Change hours</h2><p class="hint" style="margin-bottom:12px">${esc(s.volunteer_name)}, ${fmtDay(s.check_in_at)} (${fmtDur(new Date(s.check_out_at) - new Date(s.check_in_at))} actual)</p>
+    <form id="eh-form" novalidate><div class="form-error hidden" id="eh-err" role="alert"></div>
+      <label class="field"><span>Hours (steps of 0.5)</span><input type="number" id="eh-hours" min="0" max="24" step="0.5" value="${s.hours ?? ''}"></label>
+      <div class="modal-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn btn-primary" type="submit">Save and verify</button></div></form>`, (m, close) => {
+      $('#eh-form', m).addEventListener('submit', e => { e.preventDefault();
+        const h = Number($('#eh-hours', m).value);
+        if (!(h >= 0 && h <= 24 && h * 2 === Math.floor(h * 2))) { const er = $('#eh-err', m); er.textContent = 'Enter hours between 0 and 24 in steps of 0.5.'; er.classList.remove('hidden'); return; }
+        close(); verify(s.id, true, h); }); }); }));
+  $$('[data-endsess]', page).forEach(b => b.addEventListener('click', () => { const s = find(b.dataset.endsess); openModal(`
+    <h2>Check out ${esc(s.volunteer_name)}?</h2><p class="hint" style="margin-bottom:12px">Checked in at ${fmtClock(s.check_in_at)}, ${fmtDay(s.check_in_at)}. Pick when they actually finished.</p>
+    <form id="co-form" novalidate><div class="form-error hidden" id="co-err" role="alert"></div>
+      <label class="field"><span>Finished at</span><input type="datetime-local" id="co-at"></label>
+      <div class="modal-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn btn-primary" type="submit">Check out</button></div></form>`, (m, close) => {
+      const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); $('#co-at', m).value = d.toISOString().slice(0, 16);
+      $('#co-form', m).addEventListener('submit', async e => { e.preventDefault();
+        const v = $('#co-at', m).value; const at = v ? new Date(v) : new Date();
+        const { error } = await sb.rpc('supervisor_check_out', { p_id: s.id, p_out: at.toISOString() });
+        if (error) { const er = $('#co-err', m); er.textContent = errMsg(error); er.classList.remove('hidden'); return; }
+        close(); toast(`${s.volunteer_name} checked out`); route(true); }); }); }));
 }
 
 /* ----- Orders to Fulfill (supervisor) ----- */
